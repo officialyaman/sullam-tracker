@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -152,6 +151,12 @@
       </div>
     </div>
 
+    <!-- COMPLETED -->
+    <div id="viewCompleted" class="card hidden">
+      <div class="cardHead"><h3>Completed</h3><small>Approved records</small></div>
+      <div class="cardBody" id="completedBody"></div>
+    </div>
+
     <!-- SULLAM -->
     <div id="viewSullam" class="card hidden">
       <div class="cardHead">
@@ -162,19 +167,18 @@
         <div class="sullamTop">
           <div>
             <div class="bigNum"><span id="sullamNow">0</span>/55</div>
-            <div class="mutedSmall">Approved step (from records)</div>
+            <div class="mutedSmall">Approved step (after teacher approval)</div>
           </div>
           <div>
             <div class="bigNum" style="text-align:right;"><span id="sullamTarget">1</span>/55</div>
-            <div class="mutedSmall" style="text-align:right;">Target (what you will request)</div>
+            <div class="mutedSmall" style="text-align:right;">Target you will request</div>
           </div>
         </div>
 
         <div class="hr"></div>
 
         <div class="notice">
-          How it works: choose your target with the buttons. Press ✅ to send a request.
-          Teacher approves → it becomes official and updates the ladder.
+          Tap a step to select it. Press ✅ to send request. Teacher approves → official.
         </div>
 
         <div class="stairWrap">
@@ -182,28 +186,9 @@
         </div>
 
         <div class="sullamBtns">
-          <button class="roundBtn roundRed" id="btnMinus">
-            ←
-            <small>-1 step</small>
-          </button>
-          <button class="roundBtn roundGreen" id="btnConfirm">
-            ✓
-            <small>Send request</small>
-          </button>
-          <button class="roundBtn roundOrange" id="btnSkip">
-            →
-            <small>Skip to step</small>
-          </button>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="notice">
-          ⚠ If “Select Teacher” is empty or gives a permission error, run this in Supabase SQL Editor:<br>
-          <span class="mutedSmall">
-            <code class="inline">create policy "public can read teacher profiles" on public.profiles for select using (role='teacher');</code><br>
-            <code class="inline">create policy "public can read profiles for leaderboard" on public.profiles for select using (true);</code>
-          </span>
+          <button class="roundBtn roundRed" id="btnMinus">←<small>-1 step</small></button>
+          <button class="roundBtn roundGreen" id="btnConfirm">✓<small>Send request</small></button>
+          <button class="roundBtn roundOrange" id="btnSkip">→<small>Skip to step</small></button>
         </div>
       </div>
     </div>
@@ -216,7 +201,7 @@
 
     <!-- ADMIN -->
     <div id="viewAdmin" class="card hidden">
-      <div class="cardHead"><h3>Admin</h3><small>Set roles</small></div>
+      <div class="cardHead"><h3>Admin</h3><small>Start leaderboard • set points • roles</small></div>
       <div class="cardBody" id="adminBody"></div>
     </div>
 
@@ -237,38 +222,38 @@
     </div>
   </div>
 
-  <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ✅ Your Supabase keys (already filled)
+    // ✅ Your Supabase keys
     const SUPABASE_URL = "https://amudgjmpknarglyefgxk.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWRnam1wa25hcmdseWVmZ3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODI1MzEsImV4cCI6MjA4ODE1ODUzMX0.nBHxEAMhVnmxssgSpsOa_ZUO8DuX8w0Oiz8FEu0QAW8";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    const SETTINGS = {
+    const SETTINGS_LOCAL_DEFAULTS = {
       dollarsPerPage: 1,
       lastFiveMustBeWithIstaz: true,
       maxSullam: 55
     };
 
-    // Tabs
+    let appSettings = null;
+
     const TABS = [
-      { key:"home",   label:"Home",        guard:"any" },
-      { key:"sullam", label:"Sullam",      guard:"any" },
-      { key:"abrar",  label:"Abrar Bank",  guard:"abrar_or_teacher_or_admin" },
-      { key:"teacher",label:"Teacher Zone",guard:"teacher_or_admin" },
-      { key:"admin",  label:"Admin",       guard:"admin" },
+      { key:"home",      label:"Home",        guard:"any" },
+      { key:"completed", label:"Completed",   guard:"any" },
+      { key:"sullam",    label:"Sullam",      guard:"any" },
+      { key:"abrar",     label:"Abrar Bank",  guard:"abrar_or_teacher_or_admin" },
+      { key:"teacher",   label:"Teacher Zone",guard:"teacher_or_admin" },
+      { key:"admin",     label:"Admin",       guard:"admin" },
     ];
 
     let activeTab = "home";
-    let me = null;      // auth user
-    let profile = null; // profiles row
+    let me = null;
+    let profile = null;
 
     // Sullam state
-    let sullamApproved = 0; // from records
-    let sullamTarget = 1;   // what user is selecting
+    let sullamApproved = 0;
+    let sullamTarget = 1;
 
-    // helpers
     function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
     function shortId(id){ return id ? (id.slice(0,6)+"…"+id.slice(-4)) : ""; }
 
@@ -307,7 +292,7 @@
     }
 
     function showView(){
-      const map = { home:"viewHome", sullam:"viewSullam", teacher:"viewTeacher", admin:"viewAdmin", abrar:"viewAbrar" };
+      const map = { home:"viewHome", completed:"viewCompleted", sullam:"viewSullam", teacher:"viewTeacher", admin:"viewAdmin", abrar:"viewAbrar" };
       Object.values(map).forEach(id=>document.getElementById(id).classList.add("hidden"));
       document.getElementById(map[activeTab]).classList.remove("hidden");
     }
@@ -321,13 +306,13 @@
       document.getElementById("btnLogout").classList.toggle("hidden", !me);
     }
 
-    // ================= AUTH UI =================
+    // -------- AUTH --------
     function openAuthModal(){
       openModal("Sign up / Sign in", `
         <div class="twoCol">
           <div class="formRow">
             <label>Display name</label>
-            <input id="authName" placeholder="Your name (shows on leaderboard)" />
+            <input id="authName" placeholder="Your name (leaderboard name)" />
           </div>
           <div class="formRow">
             <label>Email</label>
@@ -350,7 +335,7 @@
         <button class="btn" style="width:100%;" onclick="doAuth()">Continue</button>
         <div class="hr"></div>
         <div class="notice">
-          After you sign up, go to Supabase → <b>profiles</b> table and set your role to <b>admin</b>.
+          After you sign up, set your role to <b>admin</b> in Supabase → profiles table.
         </div>
       `);
     }
@@ -391,7 +376,6 @@
     document.getElementById("btnAuth").onclick = openAuthModal;
     document.getElementById("btnLogout").onclick = logout;
 
-    // =============== AUTH STATE ===============
     async function refreshMe(){
       const { data: { user } } = await supabase.auth.getUser();
       me = user || null;
@@ -400,71 +384,98 @@
 
       const { data, error } = await supabase.from("profiles").select("*").eq("id", me.id).single();
       if(error){
-        // fallback if RLS blocks (shouldn't for own profile)
         profile = { display_name: me.email, role:"student" };
       } else {
         profile = data;
       }
     }
 
-    // ================= DATA: Leaderboard =================
-    async function getLeaderboardTotals(){
-      const { data: totals, error } = await supabase
-        .from("leaderboard_totals")
-        .select("user_id,total_pages,qadeem_pages,jadeed_pages,sullam_pages");
-      if(error){ console.warn(error); return []; }
+    // -------- SETTINGS (leaderboard on/off + points) --------
+    async function loadSettings(){
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("*")
+        .eq("id", true)
+        .single();
+      if(error){ console.warn(error); return null; }
+      return data;
+    }
 
-      // Try to get names (needs profiles select policy)
-      const ids = (totals||[]).map(t=>t.user_id);
+    // -------- LEADERBOARD POINTS --------
+    async function getLeaderboardPoints(){
+      const { data: rows, error } = await supabase
+        .from("leaderboard_points")
+        .select("user_id,total_points,qadeem_points,jadeed_points,sullam_points,total_pages,qadeem_pages,jadeed_pages,sullam_pages");
+
+      if (error) { console.warn(error); return []; }
+
+      const ids = (rows || []).map(r => r.user_id);
       let nameMap = new Map();
-      if(ids.length){
-        const { data: profs, error: e2 } = await supabase.from("profiles").select("id,display_name").in("id", ids);
-        if(!e2 && profs){
-          nameMap = new Map(profs.map(p=>[p.id, p.display_name]));
-        }
+
+      if (ids.length){
+        const { data: profs, error: e2 } = await supabase
+          .from("profiles")
+          .select("id,display_name")
+          .in("id", ids);
+
+        if (!e2 && profs) nameMap = new Map(profs.map(p => [p.id, p.display_name]));
       }
 
-      return (totals||[]).map(t=>({
-        user_id: t.user_id,
-        name: nameMap.get(t.user_id) || ("User " + shortId(t.user_id)),
-        total: Number(t.total_pages||0),
-        qadeem: Number(t.qadeem_pages||0),
-        jadeed: Number(t.jadeed_pages||0),
-        sullam: Number(t.sullam_pages||0),
+      return (rows || []).map(r => ({
+        user_id: r.user_id,
+        name: nameMap.get(r.user_id) || ("User " + shortId(r.user_id)),
+        totalPoints: Number(r.total_points || 0),
+        qadeemPoints: Number(r.qadeem_points || 0),
+        jadeedPoints: Number(r.jadeed_points || 0),
+        sullamPoints: Number(r.sullam_points || 0),
+        totalPages: Number(r.total_pages || 0),
+        qadeemPages: Number(r.qadeem_pages || 0),
+        jadeedPages: Number(r.jadeed_pages || 0),
+        sullamPages: Number(r.sullam_pages || 0),
       }));
     }
 
-    function renderRankList(list, metric){
-      const pick = (x)=> metric==="total" ? x.total : (metric==="qadeem" ? x.qadeem : x.jadeed);
+    function renderPointsList(list, field, label){
       if(!list.length) return `<div class="meta">No data yet.</div>`;
-      const sorted = [...list].sort((a,b)=>pick(b)-pick(a));
+      const sorted = [...list].sort((a,b)=>b[field]-a[field]);
       return sorted.slice(0,11).map((x,i)=>`
         <div class="row">
           <div>
             <strong>#${i+1} ${escapeHtml(x.name)}</strong>
-            <div class="meta">${metric}: ${Math.round(pick(x))}</div>
+            <div class="meta">${label}: ${Math.round(x[field])} pts</div>
           </div>
-          <div class="right"><strong>${Math.round(pick(x))}</strong></div>
+          <div class="right"><strong>${Math.round(x[field])}</strong></div>
         </div>
       `).join("");
     }
 
     async function renderHome(){
-      const rows = await getLeaderboardTotals();
-      rows.sort((a,b)=>b.total-a.total);
+      appSettings = await loadSettings();
 
-      const totalPagesAll = rows.reduce((a,x)=>a+x.total,0);
-      document.getElementById("totalMeta").textContent = `${totalPagesAll.toFixed(1)} pages total`;
+      // Leaderboard hidden until started by admin
+      if (!appSettings?.leaderboard_enabled){
+        document.getElementById("totalMeta").textContent = "Leaderboard not started yet.";
+        document.getElementById("podium").innerHTML = "";
+        document.getElementById("totalList").innerHTML = `<div class="notice">Admin will start the leaderboard soon ✅</div>`;
+        document.getElementById("qadeemMeta").textContent = "Hidden";
+        document.getElementById("qadeemList").innerHTML = `<div class="meta">Hidden until started</div>`;
+        document.getElementById("jadeedMeta").textContent = "Hidden";
+        document.getElementById("jadeedList").innerHTML = `<div class="meta">Hidden until started</div>`;
+        return;
+      }
 
-      // podium
+      const rows = await getLeaderboardPoints();
+      rows.sort((a,b)=>b.totalPoints-a.totalPoints);
+
+      const totalPointsAll = rows.reduce((a,x)=>a+x.totalPoints,0);
+      document.getElementById("totalMeta").textContent = `${Math.round(totalPointsAll)} total points`;
+
+      // podium by points
       const podium = document.getElementById("podium");
       podium.innerHTML = "";
       const top3 = rows.slice(0,3);
-      const podiumOrder = [
-        {slot:2, cls:"silver"},
-        {slot:1, cls:"gold"},
-        {slot:3, cls:"bronze"}
-      ];
+      const podiumOrder = [{slot:2, cls:"silver"},{slot:1, cls:"gold"},{slot:3, cls:"bronze"}];
+
       for(const p of podiumOrder){
         const item = top3[p.slot-1];
         const el = document.createElement("div");
@@ -472,27 +483,74 @@
         el.innerHTML = item ? `
           <div class="rank">#${p.slot}</div>
           <h4 style="margin:6px 0 4px 0;">${escapeHtml(item.name)}</h4>
-          <div style="font-weight:1000;font-size:18px;">${Math.round(item.total)}</div>
-          <div class="meta">total pages</div>
-        ` : `<div class="rank">#${p.slot}</div><h4>—</h4><div style="font-weight:1000;font-size:18px;">0</div><div class="meta">total pages</div>`;
+          <div style="font-weight:1000;font-size:18px;">${Math.round(item.totalPoints)}</div>
+          <div class="meta">points</div>
+        ` : `<div class="rank">#${p.slot}</div><h4>—</h4><div style="font-weight:1000;font-size:18px;">0</div><div class="meta">points</div>`;
         podium.appendChild(el);
       }
 
-      document.getElementById("totalList").innerHTML = renderRankList(rows,"total");
-      document.getElementById("qadeemList").innerHTML = renderRankList(rows,"qadeem");
-      document.getElementById("jadeedList").innerHTML = renderRankList(rows,"jadeed");
+      document.getElementById("totalList").innerHTML  = renderPointsList(rows,"totalPoints","total");
+      document.getElementById("qadeemList").innerHTML = renderPointsList(rows,"qadeemPoints","qadeem");
+      document.getElementById("jadeedList").innerHTML = renderPointsList(rows,"jadeedPoints","jadeed");
 
-      const qTotal = rows.reduce((a,x)=>a+x.qadeem,0);
-      const jTotal = rows.reduce((a,x)=>a+x.jadeed,0);
-      document.getElementById("qadeemMeta").textContent = `${qTotal.toFixed(1)} pages total`;
-      document.getElementById("jadeedMeta").textContent = `${jTotal.toFixed(1)} pages total`;
+      const qTotal = rows.reduce((a,x)=>a+x.qadeemPoints,0);
+      const jTotal = rows.reduce((a,x)=>a+x.jadeedPoints,0);
+      document.getElementById("qadeemMeta").textContent = `${Math.round(qTotal)} points`;
+      document.getElementById("jadeedMeta").textContent = `${Math.round(jTotal)} points`;
     }
 
-    // ================= Teachers (REAL) =================
+    // -------- COMPLETED (approved records) --------
+    async function renderCompleted(){
+      const body = document.getElementById("completedBody");
+
+      // show only my completed if logged in, else show message
+      if(!me){
+        body.innerHTML = `<div class="notice">Log in to see your approved completed items.</div>`;
+        return;
+      }
+
+      const { data: recs, error } = await supabase
+        .from("records")
+        .select("*")
+        .eq("user_id", me.id)
+        .order("created_at", { ascending:false })
+        .limit(200);
+
+      if(error){
+        body.innerHTML = `<div class="notice">Error: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
+
+      if(!recs?.length){
+        body.innerHTML = `<div class="notice">No approved records yet. Submit a request and wait for teacher approval ✅</div>`;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="notice">Showing your approved records (${recs.length})</div>
+        <div class="hr"></div>
+        ${recs.map(r=>`
+          <div class="row">
+            <div>
+              <strong>${escapeHtml(r.type)}</strong>
+              <div class="meta">
+                pages: ${Number(r.pages||0)}
+                ${r.type==="sullam" ? ` • steps ${r.step_from} → ${r.step_to}` : ``}
+                • ${r.with_istaz ? `with istaz (${escapeHtml(r.istaz_name||"—")})` : "solo"}
+              </div>
+              <div class="meta">${new Date(r.created_at).toLocaleString()}</div>
+            </div>
+            <div class="right"><span class="badge ok">approved</span></div>
+          </div>
+        `).join("")}
+      `;
+    }
+
+    // -------- Teachers (REAL) --------
     async function fetchTeachers(){
       const { data, error } = await supabase
         .from("profiles")
-        .select("id,display_name,role")
+        .select("id,display_name")
         .eq("role","teacher")
         .order("display_name",{ascending:true});
       if(error) throw error;
@@ -504,10 +562,9 @@
       try{
         teachers = await fetchTeachers();
       }catch(e){
-        alert("Teacher list blocked by policy. Open Sullam page and run the policy fix shown there.");
+        alert("Teacher list blocked. Make sure you ran the SQL that allows profiles select.");
         return;
       }
-
       if(!teachers.length){
         alert("No teachers yet. Admin must set some users role=teacher in Supabase → profiles table.");
         return;
@@ -551,7 +608,7 @@
       };
     }
 
-    // ================= Requests modal (+ button) =================
+    // -------- Requests (+ button) --------
     function openRequestModal(){
       if(!me) return openAuthModal();
       openModal("New Request", `
@@ -568,7 +625,7 @@
     function openReqForm(type){
       if(type==="sullam"){
         openModal("Sullam Request", `
-          <div class="notice">This sends a request to Teacher Zone. After approval it becomes official.</div>
+          <div class="notice">Teacher must approve for it to count.</div>
           <div class="hr"></div>
 
           <div class="twoCol">
@@ -663,8 +720,8 @@
         const st = Number(document.getElementById("st").value);
         if(!Number.isFinite(sf) || !Number.isFinite(st)) return alert("Enter steps.");
         if(st <= sf) return alert("Step To must be bigger than Step From.");
-        if(st > SETTINGS.maxSullam) return alert("Max is 55.");
-        if(SETTINGS.lastFiveMustBeWithIstaz && st===55 && !withIstaz) return alert("Final step must be with istaz.");
+        if(st > SETTINGS_LOCAL_DEFAULTS.maxSullam) return alert("Max is 55.");
+        if(SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && st===55 && !withIstaz) return alert("Final step must be with istaz.");
         payload.step_from = sf;
         payload.step_to = st;
         payload.pages = st - sf;
@@ -681,24 +738,22 @@
       await renderAll();
     }
 
-    // ================= SULLAM staircase =================
+    // -------- SULLAM staircase --------
     function buildStairLayout(){
-      // rows from bottom: 10,9,8,...,1 = 55
       const rows = [];
       let start = 1;
       for(let len=10; len>=1; len--){
         const row = [];
         for(let i=0;i<len;i++) row.push(start++);
-        rows.push(row); // bottom-first for now
+        rows.push(row);
       }
-      // display top-first (55 at top)
       return rows.reverse();
     }
 
     function renderSullamUI(){
       document.getElementById("sullamNow").textContent = String(sullamApproved);
       document.getElementById("sullamTarget").textContent = String(sullamTarget);
-      document.getElementById("sullamMeta").textContent = me ? `Your ladder is tracked officially after teacher approval.` : `Log in to track your steps.`;
+      document.getElementById("sullamMeta").textContent = me ? `Tap a step, then ✅` : `Log in to track steps`;
 
       const stairEl = document.getElementById("stair");
       stairEl.innerHTML = "";
@@ -711,20 +766,14 @@
           const c = document.createElement("div");
           c.className = "cell";
           c.textContent = n;
-
           if(n <= sullamApproved) c.classList.add("done");
           if(n === sullamTarget) c.classList.add("next");
-
-          // lock: final step must be with istaz (visual hint)
-          if(SETTINGS.lastFiveMustBeWithIstaz && n===55) c.classList.add("lock");
-
-          // tap to set target (nice for iPad)
+          if(SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && n===55) c.classList.add("lock");
           c.onclick = ()=>{
             if(!me) return openAuthModal();
             sullamTarget = n;
             renderSullamUI();
           };
-
           row.appendChild(c);
         }
         stairEl.appendChild(row);
@@ -737,10 +786,9 @@
         sullamTarget = 1;
         return;
       }
-      // find max step_to in approved records
       const { data, error } = await supabase
         .from("records")
-        .select("step_to,created_at")
+        .select("step_to")
         .eq("user_id", me.id)
         .eq("type", "sullam")
         .order("step_to", { ascending:false })
@@ -760,8 +808,7 @@
       if(sullamTarget <= sullamApproved) return alert("Target must be higher than approved step.");
       if(sullamTarget > 55) return alert("Max is 55.");
 
-      // pick teacher if final step requires it OR if user wants it
-      const mustIstaz = SETTINGS.lastFiveMustBeWithIstaz && sullamTarget === 55;
+      const mustIstaz = SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && sullamTarget === 55;
 
       let teacher = null;
       let withIstaz = false;
@@ -771,7 +818,6 @@
         await openTeacherPicker((t)=> teacher = t);
         if(!teacher) return;
       } else {
-        // ask quick
         const want = confirm("With istaz? Press OK for Yes, Cancel for No.");
         if(want){
           withIstaz = true;
@@ -798,7 +844,6 @@
       alert("Sullam request sent ✅ (wait for teacher approval)");
     }
 
-    // Buttons
     document.getElementById("btnMinus").onclick = ()=>{
       if(!me) return openAuthModal();
       sullamTarget = Math.max(1, sullamTarget - 1);
@@ -819,7 +864,7 @@
       renderSullamUI();
     };
 
-    // ================= Teacher Zone =================
+    // -------- Teacher Zone --------
     async function renderTeacher(){
       const body = document.getElementById("teacherBody");
       if(!canSee("teacher_or_admin")) { body.innerHTML = `<div class="notice">Teachers/admin only.</div>`; return; }
@@ -832,15 +877,13 @@
 
       if(error){ body.innerHTML = `<div class="notice">Error: ${escapeHtml(error.message)}</div>`; return; }
 
-      // Try to resolve student names (may be blocked if profiles select is locked)
+      // Resolve student names
       let nameMap = new Map();
-      try{
-        const ids = [...new Set(reqs.map(r=>r.user_id))];
-        if(ids.length){
-          const { data: profs } = await supabase.from("profiles").select("id,display_name").in("id", ids);
-          if(profs) nameMap = new Map(profs.map(p=>[p.id,p.display_name]));
-        }
-      }catch(e){}
+      const ids = [...new Set(reqs.map(r=>r.user_id))];
+      if(ids.length){
+        const { data: profs } = await supabase.from("profiles").select("id,display_name").in("id", ids);
+        if(profs) nameMap = new Map(profs.map(p=>[p.id,p.display_name]));
+      }
 
       body.innerHTML = `
         <div class="notice"><b>Pending:</b> ${reqs.length}</div>
@@ -879,7 +922,7 @@
       const { data: r, error } = await supabase.from("requests").select("*").eq("id", id).single();
       if(error) return alert(error.message);
 
-      if(r.type==="sullam" && SETTINGS.lastFiveMustBeWithIstaz && r.step_to===55 && !r.with_istaz){
+      if(r.type==="sullam" && SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && r.step_to===55 && !r.with_istaz){
         return alert("Blocked: Final step must be with istaz.");
       }
 
@@ -924,17 +967,59 @@
     window.approveReq = approveReq;
     window.denyReq = denyReq;
 
-    // ================= Admin =================
+    // -------- Admin (start leaderboard + points + roles) --------
     async function renderAdmin(){
       const body = document.getElementById("adminBody");
       if(!canSee("admin")) { body.innerHTML = `<div class="notice">Admin only.</div>`; return; }
 
-      const { data: profs, error } = await supabase.from("profiles").select("id,display_name,role,created_at").order("created_at",{ascending:false});
+      appSettings = await loadSettings();
+
+      const { data: profs, error } = await supabase
+        .from("profiles")
+        .select("id,display_name,role,created_at")
+        .order("created_at",{ascending:false});
+
       if(error){ body.innerHTML = `<div class="notice">Error: ${escapeHtml(error.message)}</div>`; return; }
 
       body.innerHTML = `
-        <div class="notice">Set roles for real users (no demo).</div>
+        <div class="notice"><b>Leaderboard Settings</b></div>
         <div class="hr"></div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Leaderboard enabled?</label>
+            <select id="lbEnabled">
+              <option value="false" ${!appSettings?.leaderboard_enabled ? "selected":""}>No (hidden)</option>
+              <option value="true"  ${appSettings?.leaderboard_enabled ? "selected":""}>Yes (show)</option>
+            </select>
+          </div>
+          <div class="formRow">
+            <label>Save</label>
+            <button class="btn" style="width:100%;" onclick="saveSettings()">Update Settings</button>
+          </div>
+        </div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Qadeem points / page</label>
+            <input id="ptQ" type="number" value="${appSettings?.points_qadeem ?? 2000}" />
+          </div>
+          <div class="formRow">
+            <label>Sullam points / page</label>
+            <input id="ptS" type="number" value="${appSettings?.points_sullam ?? 6000}" />
+          </div>
+        </div>
+
+        <div class="formRow">
+          <label>Jadeed points / page</label>
+          <input id="ptJ" type="number" value="${appSettings?.points_jadeed ?? 2000}" />
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="notice"><b>Roles (real users)</b></div>
+        <div class="hr"></div>
+
         ${profs.map(p=>`
           <div class="row">
             <div>
@@ -951,6 +1036,30 @@
       `;
     }
 
+    async function saveSettings(){
+      const leaderboard_enabled = document.getElementById("lbEnabled").value === "true";
+      const points_qadeem = Number(document.getElementById("ptQ").value||2000);
+      const points_sullam = Number(document.getElementById("ptS").value||6000);
+      const points_jadeed = Number(document.getElementById("ptJ").value||2000);
+
+      const { error } = await supabase
+        .from("app_settings")
+        .update({
+          leaderboard_enabled,
+          points_qadeem,
+          points_sullam,
+          points_jadeed,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", true);
+
+      if(error) return alert(error.message);
+
+      alert("Settings updated ✅");
+      await renderAll();
+    }
+    window.saveSettings = saveSettings;
+
     async function setRole(id, role){
       const { error } = await supabase.from("profiles").update({ role }).eq("id", id);
       if(error) return alert(error.message);
@@ -960,14 +1069,12 @@
     }
     window.setRole = setRole;
 
-    // ================= Abrar Bank =================
+    // -------- Abrar Bank (optional still works) --------
     async function renderAbrar(){
       const body = document.getElementById("abrarBody");
       if(!canSee("abrar_or_teacher_or_admin")) { body.innerHTML = `<div class="notice">Abrar/teacher/admin only.</div>`; return; }
 
-      const totals = await getLeaderboardTotals();
-
-      // ledger sums
+      const rows = appSettings?.leaderboard_enabled ? await getLeaderboardPoints() : [];
       const { data: ledger, error } = await supabase.from("abrar_ledger").select("user_id,amount,message,created_at").order("created_at",{ascending:false});
       if(error){ body.innerHTML = `<div class="notice">Error: ${escapeHtml(error.message)}</div>`; return; }
 
@@ -976,8 +1083,9 @@
         paidMap.set(x.user_id, (paidMap.get(x.user_id)||0) + Number(x.amount||0));
       });
 
-      const view = totals.map(x=>{
-        const owed = x.total * SETTINGS.dollarsPerPage;
+      const dollarsPerPage = SETTINGS_LOCAL_DEFAULTS.dollarsPerPage;
+      const view = (rows||[]).map(x=>{
+        const owed = x.totalPages * dollarsPerPage;
         const paid = paidMap.get(x.user_id)||0;
         const diff = paid - owed;
         return { ...x, owed, paid, diff };
@@ -988,7 +1096,7 @@
       body.innerHTML = `
         <div class="twoCol">
           <div>
-            <div class="notice"><b>Balances</b> ($${SETTINGS.dollarsPerPage}/page)</div>
+            <div class="notice"><b>Balances</b> ($${dollarsPerPage}/page)</div>
             <div class="hr"></div>
             <div style="max-height:420px;overflow:auto;">
               ${view.map(x=>{
@@ -997,14 +1105,14 @@
                   <div class="row">
                     <div>
                       <strong>${escapeHtml(x.name)}</strong>
-                      <div class="meta">pages: ${Math.round(x.total)} • owed: $${x.owed.toFixed(2)}</div>
+                      <div class="meta">pages: ${Math.round(x.totalPages)} • owed: $${x.owed.toFixed(2)}</div>
                     </div>
                     <div class="right">
                       <span class="badge ${badge}">paid: $${x.paid.toFixed(2)}</span>
                     </div>
                   </div>
                 `;
-              }).join("") || `<div class="meta">No data yet.</div>`}
+              }).join("") || `<div class="meta">Leaderboard is hidden or empty.</div>`}
             </div>
           </div>
 
@@ -1015,7 +1123,7 @@
             <div class="formRow">
               <label>User</label>
               <select id="bankUser">
-                ${view.map(x=>`<option value="${x.user_id}">${escapeHtml(x.name)}</option>`).join("")}
+                ${(view||[]).map(x=>`<option value="${x.user_id}">${escapeHtml(x.name)}</option>`).join("")}
               </select>
             </div>
 
@@ -1055,6 +1163,7 @@
     }
 
     async function bankSave(){
+      if(!me) return openAuthModal();
       const userId = document.getElementById("bankUser").value;
       const amtRaw = Number(document.getElementById("bankAmt").value||0);
       const act = document.getElementById("bankAct").value;
@@ -1079,18 +1188,16 @@
     }
     window.bankSave = bankSave;
 
-    // ================= MAIN RENDER =================
+    // -------- MAIN --------
     async function renderAll(){
       setWho();
       renderTabs();
       showView();
 
-      // + button only when logged in
       document.getElementById("fab").style.display = me ? "flex" : "none";
 
       await renderHome();
-
-      // Sullam load + render
+      await renderCompleted();
       await loadSullamApprovedStep();
       renderSullamUI();
 
@@ -1101,15 +1208,16 @@
 
     document.getElementById("fab").onclick = openRequestModal;
 
-    // initial load (NOT auto logged in)
     (async ()=>{
       await refreshMe();
+      appSettings = await loadSettings();
       setWho();
       renderTabs();
       await renderAll();
 
       supabase.auth.onAuthStateChange(async ()=>{
         await refreshMe();
+        appSettings = await loadSettings();
         activeTab = "home";
         await renderAll();
       });
