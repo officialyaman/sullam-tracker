@@ -1207,32 +1207,24 @@
     }
 
     document.getElementById("fab").onclick = openRequestModal;
-
-    // ✅ expose functions for HTML onclick (fixes "buttons do nothing")
+    
+// ✅ expose functions for HTML onclick (fixes "buttons do nothing")
 window.doAuth = doAuth;
 window.openReqForm = openReqForm;
 window.sendRequest = sendRequest;
-window.pickTeacher = pickTeacher;
+
+// IMPORTANT: pickTeacher is already defined as window.pickTeacher above, so DO NOT set it again
+
 window.bankSave = bankSave;
 window.saveSettings = saveSettings;
 window.setRole = setRole;
 window.approveReq = approveReq;
 window.denyReq = denyReq;
 window.logout = logout;
-    (async ()=>{
-      await refreshMe();
-      appSettings = await loadSettings();
-      setWho();
-      renderTabs();
-      await renderAll();
 
-      supabase.auth.onAuthStateChange(async ()=>{
-        await refreshMe();
-        appSettings = await loadSettings();
-        activeTab = "home";
-        await renderAll();
-      });
-    })();
+// (optional) also expose closeModal because you used it in onclick in the modal HTML
+window.closeModal = closeModal;
+
   </script>
 </body>
 </html>
