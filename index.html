@@ -1208,6 +1208,17 @@
 
     document.getElementById("fab").onclick = openRequestModal;
 
+    // ✅ expose functions for HTML onclick (fixes "buttons do nothing")
+window.doAuth = doAuth;
+window.openReqForm = openReqForm;
+window.sendRequest = sendRequest;
+window.pickTeacher = pickTeacher;
+window.bankSave = bankSave;
+window.saveSettings = saveSettings;
+window.setRole = setRole;
+window.approveReq = approveReq;
+window.denyReq = denyReq;
+window.logout = logout;
     (async ()=>{
       await refreshMe();
       appSettings = await loadSettings();
