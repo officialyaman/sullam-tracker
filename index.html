@@ -231,7 +231,7 @@
 
     const SETTINGS_LOCAL_DEFAULTS = {
       dollarsPerPage: 1,
-      lastFiveMustBeWithIstaz: true,
+      lastFiveMustBeWithTeacher: true,
       maxSullam: 55
     };
 
@@ -536,7 +536,7 @@
               <div class="meta">
                 pages: ${Number(r.pages||0)}
                 ${r.type==="sullam" ? ` • steps ${r.step_from} → ${r.step_to}` : ``}
-                • ${r.with_istaz ? `with istaz (${escapeHtml(r.istaz_name||"—")})` : "solo"}
+                • ${r.with_teacher ? `with teacher (${escapeHtml(r.teacher_name||"—")})` : "solo"}
               </div>
               <div class="meta">${new Date(r.created_at).toLocaleString()}</div>
             </div>
@@ -570,7 +570,7 @@
         return;
       }
 
-      openModal("Select Teacher (Istaz)", `
+      openModal("Select Teacher (Teacher)", `
         <div class="formRow">
           <label>Search teacher name</label>
           <input id="tSearch" placeholder="Search teacher name..." />
@@ -641,15 +641,15 @@
 
           <div class="twoCol">
             <div class="formRow">
-              <label>With istaz?</label>
-              <select id="withIstaz">
+              <label>With teacher?</label>
+              <select id="withTeacher">
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
             </div>
 
             <div class="formRow">
-              <label>Teacher (Istaz)</label>
+              <label>Teacher (Teacher)</label>
               <input id="teacherName" placeholder="Select teacher..." readonly />
               <input id="teacherId" type="hidden" />
               <button class="btn secondary" style="width:100%;margin-top:8px;" onclick="pickTeacher()">Select Teacher</button>
@@ -668,8 +668,8 @@
               <input id="pg" type="number" min="0" step="0.5" value="11" />
             </div>
             <div class="formRow">
-              <label>With istaz?</label>
-              <select id="withIstaz">
+              <label>With teacher?</label>
+              <select id="withTeacher">
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
@@ -677,7 +677,7 @@
           </div>
 
           <div class="formRow">
-            <label>Teacher (Istaz)</label>
+            <label>Teacher (Teacher)</label>
             <input id="teacherName" placeholder="Select teacher..." readonly />
             <input id="teacherId" type="hidden" />
             <button class="btn secondary" style="width:100%;margin-top:8px;" onclick="pickTeacher()">Select Teacher</button>
@@ -699,18 +699,18 @@
     async function sendRequest(type){
       if(!me) return;
 
-      const withIstaz = document.getElementById("withIstaz")?.value === "true";
+      const withTeacher = document.getElementById("withTeacher")?.value === "true";
       const teacherId = document.getElementById("teacherId")?.value || null;
       const teacherName = (document.getElementById("teacherName")?.value || "").trim();
       const note = (document.getElementById("note")?.value || "").trim();
 
-      if(withIstaz && (!teacherId || !teacherName)) return alert("Select teacher (istaz).");
+      if(withTeacher && (!teacherId || !teacherName)) return alert("Select teacher (teacher).");
 
       let payload = {
         type,
         user_id: me.id,
-        with_istaz: withIstaz,
-        istaz_name: teacherName,
+        with_teacher: withTeacher,
+        teacher_name: teacherName,
         teacher_id: teacherId,
         note
       };
@@ -721,7 +721,7 @@
         if(!Number.isFinite(sf) || !Number.isFinite(st)) return alert("Enter steps.");
         if(st <= sf) return alert("Step To must be bigger than Step From.");
         if(st > SETTINGS_LOCAL_DEFAULTS.maxSullam) return alert("Max is 55.");
-        if(SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && st===55 && !withIstaz) return alert("Final step must be with istaz.");
+        if(SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithTeacher && st===55 && !withTeacher) return alert("Final step must be with teacher.");
         payload.step_from = sf;
         payload.step_to = st;
         payload.pages = st - sf;
@@ -768,7 +768,7 @@
           c.textContent = n;
           if(n <= sullamApproved) c.classList.add("done");
           if(n === sullamTarget) c.classList.add("next");
-          if(SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && n===55) c.classList.add("lock");
+          if(SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithTeacher && n===55) c.classList.add("lock");
           c.onclick = ()=>{
             if(!me) return openAuthModal();
             sullamTarget = n;
@@ -808,19 +808,19 @@
       if(sullamTarget <= sullamApproved) return alert("Target must be higher than approved step.");
       if(sullamTarget > 55) return alert("Max is 55.");
 
-      const mustIstaz = SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && sullamTarget === 55;
+      const mustTeacher = SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithTeacher && sullamTarget === 55;
 
       let teacher = null;
-      let withIstaz = false;
+      let withTeacher = false;
 
-      if(mustIstaz){
-        withIstaz = true;
+      if(mustTeacher){
+        withTeacher = true;
         await openTeacherPicker((t)=> teacher = t);
         if(!teacher) return;
       } else {
-        const want = confirm("With istaz? Press OK for Yes, Cancel for No.");
+        const want = confirm("With teacher? Press OK for Yes, Cancel for No.");
         if(want){
-          withIstaz = true;
+          withTeacher = true;
           await openTeacherPicker((t)=> teacher = t);
           if(!teacher) return;
         }
@@ -832,8 +832,8 @@
         pages: sullamTarget - sullamApproved,
         step_from: sullamApproved,
         step_to: sullamTarget,
-        with_istaz: withIstaz,
-        istaz_name: teacher ? teacher.name : "",
+        with_teacher: withTeacher,
+        teacher_name: teacher ? teacher.name : "",
         teacher_id: teacher ? teacher.id : null,
         note: ""
       };
@@ -899,7 +899,7 @@
                     <div style="font-weight:1000;">${escapeHtml(nm)}</div>
                     <div class="meta">
                       ${escapeHtml(r.type)} • ${Number(r.pages||0)} pages •
-                      ${r.with_istaz ? "with istaz" : "solo"} • ${escapeHtml(r.istaz_name||"—")}
+                      ${r.with_teacher ? "with teacher" : "solo"} • ${escapeHtml(r.teacher_name||"—")}
                     </div>
                     ${r.type==="sullam" ? `<div class="meta">Sullam: ${r.step_from} → ${r.step_to}</div>` : ``}
                     ${r.note ? `<div class="meta">Note: ${escapeHtml(r.note)}</div>` : ``}
@@ -922,16 +922,16 @@
       const { data: r, error } = await supabase.from("requests").select("*").eq("id", id).single();
       if(error) return alert(error.message);
 
-      if(r.type==="sullam" && SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithIstaz && r.step_to===55 && !r.with_istaz){
-        return alert("Blocked: Final step must be with istaz.");
+      if(r.type==="sullam" && SETTINGS_LOCAL_DEFAULTS.lastFiveMustBeWithTeacher && r.step_to===55 && !r.with_teacher){
+        return alert("Blocked: Final step must be with teacher.");
       }
 
       const { error: e1 } = await supabase.from("records").insert({
         user_id: r.user_id,
         type: r.type,
         pages: r.pages,
-        with_istaz: r.with_istaz,
-        istaz_name: r.istaz_name,
+        with_teacher: r.with_teacher,
+        teacher_name: r.teacher_name,
         teacher_id: r.teacher_id,
         step_from: r.step_from,
         step_to: r.step_to,
