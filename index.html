@@ -5,245 +5,38 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sullam Tracker</title>
   <style>
-    :root{
-      --bg:#f3f7ff; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e6eefc;
-      --shadow:0 10px 30px rgba(2,6,23,.08); --radius:18px;
-      --green2:#4ade80; --purple2:#a78bfa; --blue2:#60a5fa;
-      --gold:#ffd84d; --bronze:#c77c2b; --silver:#cfd3d8;
-      --danger:#ffb4b4; --ok:#bff0c8; --warn:#ffe8b0;
-      --btn:#111827; --btn2:#334155;
+    body { font-family: Arial, sans-serif; padding: 40px; background: #f5f7fb; }
+    .btn { padding: 12px 18px; border: 0; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    .btn.secondary { background: white; border: 1px solid #ddd; }
+    .hidden { display: none; }
+    .modalBack {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: center; justify-content: center;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--ink);
-      background:
-        radial-gradient(1200px 600px at 50% -10%, #d6f7e3 0%, transparent 60%),
-        radial-gradient(900px 500px at 10% 10%, #e6dcff 0%, transparent 55%),
-        radial-gradient(1000px 500px at 90% 15%, #d4ecff 0%, transparent 55%),
-        var(--bg);
+    .modal {
+      width: min(500px, 92vw); background: white; border-radius: 16px; padding: 20px;
     }
-    .wrap{max-width:1200px;margin:24px auto;padding:12px}
-    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap}
-    .brand{display:flex;gap:10px;align-items:center;font-weight:1000}
-    .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--purple2),var(--blue2));box-shadow:var(--shadow)}
-    .pill{
-      display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.75);border:1px solid var(--line);
-      padding:8px 10px;border-radius:999px;box-shadow:0 6px 18px rgba(2,6,23,.06);backdrop-filter:blur(8px)
+    .formRow { margin-bottom: 12px; }
+    input, select {
+      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;
     }
-    .pill small{color:var(--muted);font-weight:900}
-    .btn{border:none;border-radius:12px;padding:10px 12px;background:var(--btn);color:#fff;font-weight:1000;cursor:pointer}
-    .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-    .tab{
-      padding:9px 12px;border-radius:999px;border:1px solid var(--line);
-      background:rgba(255,255,255,.75);cursor:pointer;font-weight:1000;color:var(--btn2)
-    }
-    .tab.active{background:var(--btn);color:#fff;border-color:transparent}
-    .grid{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;align-items:start}
-    @media(max-width:1050px){.grid{grid-template-columns:1fr}}
-    .card{
-      background:rgba(255,255,255,.82);border:1px solid var(--line);
-      border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(10px)
-    }
-    .cardHead{
-      padding:14px 16px;border-bottom:1px solid var(--line);
-      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
-    }
-    .cardHead h3{margin:0;font-size:16px}
-    .cardHead small{color:var(--muted);font-weight:900}
-    .cardBody{padding:12px 14px}
-    .leaderHeader{
-      background:linear-gradient(135deg,var(--green2),#22c55e);
-      color:#06331a;padding:18px 16px;text-align:center;font-weight:1000
-    }
-    .leaderHeader .sub{font-weight:900;opacity:.9;margin-top:6px}
-    .podium{display:flex;gap:10px;justify-content:center;align-items:stretch;padding:14px;flex-wrap:wrap}
-    .podiumCard{
-      width:170px;border-radius:14px;padding:12px;box-shadow:0 10px 25px rgba(2,6,23,.12);
-      text-align:center;border:1px solid rgba(2,6,23,.06)
-    }
-    .gold{background:var(--gold)} .silver{background:var(--silver)} .bronze{background:var(--bronze);color:#fff}
-    .rank{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.45);font-weight:1000}
-    .row{display:flex;justify-content:space-between;align-items:center;padding:12px 12px;border-bottom:1px solid var(--line);gap:10px}
-    .row:last-child{border-bottom:none}
-    .row strong{font-size:14px}
-    .row .meta{color:var(--muted);font-size:12px;font-weight:900}
-    .row .right{text-align:right}
-    .badge{
-      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);
-      background:rgba(255,255,255,.8);font-size:12px;font-weight:1000;color:var(--btn2)
-    }
-    .badge.ok{background:var(--ok);border-color:#a7e4b4}
-    .badge.warn{background:var(--warn);border-color:#f3d27a}
-    .badge.danger{background:var(--danger);border-color:#ff8f8f}
-    .notice{
-      padding:10px 12px;border-radius:14px;border:1px solid var(--line);
-      background:rgba(255,255,255,.75);color:var(--btn2);font-weight:900
-    }
-    .twoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:700px){.twoCol{grid-template-columns:1fr}}
-    label{display:block;font-size:12px;color:var(--muted);font-weight:1000;margin-bottom:6px}
-    input,select,textarea{
-      width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
-      outline:none;background:rgba(255,255,255,.9);font-weight:900;color:var(--ink)
-    }
-    textarea{min-height:90px;resize:vertical}
-    .formRow{margin-bottom:10px}
-    .hr{height:1px;background:var(--line);margin:12px 0}
-    .hidden{display:none !important}
-    .fab{
-      position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:18px;border:none;
-      background:linear-gradient(135deg,var(--purple2),var(--blue2));color:#fff;font-weight:1000;font-size:28px;
-      box-shadow:0 18px 35px rgba(2,6,23,.22);cursor:pointer;display:none;align-items:center;justify-content:center
-    }
-    .modalBack{
-      position:fixed;inset:0;background:rgba(2,6,23,.45);display:none;align-items:center;justify-content:center;padding:16px
-    }
-    .modal{
-      width:min(760px,100%);border-radius:20px;background:rgba(255,255,255,.92);
-      border:1px solid var(--line);box-shadow:0 30px 80px rgba(2,6,23,.35);overflow:hidden;backdrop-filter:blur(12px)
-    }
-    .modalHead{
-      padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);font-weight:1000
-    }
-    .xbtn{border:none;background:transparent;font-size:20px;cursor:pointer}
-    .sullamTop{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
-      padding:10px 12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.75)
-    }
-    .bigNum{font-size:28px;font-weight:1000}
-    .stairWrap{display:flex;justify-content:center;overflow:auto;padding:10px 0}
-    .stair{
-      display:flex;flex-direction:column;gap:6px;padding:10px;
-      background:rgba(2,6,23,.03);border:1px solid var(--line);border-radius:18px;width:fit-content
-    }
-    .stairRow{display:flex;gap:6px;justify-content:flex-end}
-    .cell{
-      width:44px;height:40px;border-radius:10px;border:1px solid rgba(15,23,42,.12);
-      display:flex;align-items:center;justify-content:center;font-weight:1000;
-      background:rgba(255,255,255,.75);user-select:none;cursor:pointer
-    }
-    .cell.done{background:rgba(22,163,74,.18);border-color:rgba(22,163,74,.45);color:#0b3b1a}
-    .cell.next{outline:3px solid rgba(96,165,250,.65)}
-    .cell.lock{background:rgba(250,204,21,.18);border-color:rgba(250,204,21,.55)}
-    .sullamBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
-    .roundBtn{
-      width:80px;height:80px;border-radius:999px;border:none;cursor:pointer;font-weight:1000;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      box-shadow:0 14px 26px rgba(2,6,23,.18)
-    }
-    .roundBtn small{font-size:12px;opacity:.9;margin-top:4px}
-    .roundRed{background:#ef4444;color:#fff}
-    .roundGreen{background:#22c55e;color:#fff}
-    .roundOrange{background:#f59e0b;color:#fff}
-    .mutedSmall{color:var(--muted);font-weight:900;font-size:12px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand"><div class="logo"></div><div>Official Sullam Tracker</div></div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-        <div class="pill"><small>User:</small><strong id="whoName">Logged out</strong><span class="badge" id="whoRole">guest</span></div>
-        <button class="btn secondary" id="btnAuth" onclick="openAuthModal()">Sign up / Sign in</button>
-        <button class="btn secondary hidden" id="btnLogout" onclick="logout()">Logout</button>
-      </div>
-    </div>
+  <h1>Sullam Tracker</h1>
 
-    <div class="tabs" id="tabs"></div>
+  <p>
+    User:
+    <strong id="whoName">Logged out</strong>
+  </p>
 
-    <div id="viewHome" class="grid">
-      <div class="card">
-        <div class="cardHead" style="background:linear-gradient(135deg,var(--purple2),#c4b5fd);color:#1f1147;">
-          <h3>Qadeem Points</h3><small id="qadeemMeta">—</small>
-        </div>
-        <div class="cardBody" id="qadeemList"></div>
-      </div>
-
-      <div class="card">
-        <div class="leaderHeader">
-          <div style="font-size:18px;">Total Points Leaderboard</div>
-          <div class="sub" id="totalMeta">—</div>
-        </div>
-        <div class="podium" id="podium"></div>
-        <div class="cardBody" id="totalList"></div>
-      </div>
-
-      <div class="card">
-        <div class="cardHead" style="background:linear-gradient(135deg,var(--blue2),#93c5fd);color:#06253e;">
-          <h3>Jadeed Points</h3><small id="jadeedMeta">—</small>
-        </div>
-        <div class="cardBody" id="jadeedList"></div>
-      </div>
-    </div>
-
-    <div id="viewCompleted" class="card hidden">
-      <div class="cardHead"><h3>Completed</h3><small>Approved records</small></div>
-      <div class="cardBody" id="completedBody"></div>
-    </div>
-
-    <div id="viewSullam" class="card hidden">
-      <div class="cardHead">
-        <h3>Sullam</h3>
-        <small id="sullamMeta">—</small>
-      </div>
-      <div class="cardBody">
-        <div class="sullamTop">
-          <div>
-            <div class="bigNum"><span id="sullamNow">0</span>/55</div>
-            <div class="mutedSmall">Approved step (after teacher approval)</div>
-          </div>
-          <div>
-            <div class="bigNum" style="text-align:right;"><span id="sullamTarget">1</span>/55</div>
-            <div class="mutedSmall" style="text-align:right;">Target you will request</div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="notice">
-          Tap a step to select it. Press ✓ to send request. Teacher approves → official.
-        </div>
-
-        <div class="stairWrap">
-          <div class="stair" id="stair"></div>
-        </div>
-
-        <div class="sullamBtns">
-          <button class="roundBtn roundRed" id="btnMinus">←<small>-1 step</small></button>
-          <button class="roundBtn roundGreen" id="btnConfirm">✓<small>Send request</small></button>
-          <button class="roundBtn roundOrange" id="btnSkip">→<small>Skip to step</small></button>
-        </div>
-      </div>
-    </div>
-
-    <div id="viewTeacher" class="card hidden">
-      <div class="cardHead"><h3>Teacher Zone</h3><small>Confirm requests</small></div>
-      <div class="cardBody" id="teacherBody"></div>
-    </div>
-
-    <div id="viewAdmin" class="card hidden">
-      <div class="cardHead"><h3>Admin</h3><small>Start leaderboard • set points • roles</small></div>
-      <div class="cardBody" id="adminBody"></div>
-    </div>
-
-    <div id="viewAbrar" class="card hidden">
-      <div class="cardHead"><h3>Abrar Bank</h3><small>Deposit + Withdraw</small></div>
-      <div class="cardBody" id="abrarBody"></div>
-    </div>
-  </div>
-
-  <button class="fab" id="fab" title="New Request">+</button>
+  <button class="btn secondary" onclick="openAuthModal()">Sign up / Sign in</button>
+  <button class="btn secondary hidden" id="btnLogout" onclick="logout()">Logout</button>
 
   <div class="modalBack" id="modalBack">
     <div class="modal">
-      <div class="modalHead">
-        <div id="modalTitle">—</div>
-        <button class="xbtn" onclick="closeModal()">✕</button>
-      </div>
-      <div class="cardBody" id="modalBody"></div>
+      <h3 id="modalTitle">Auth</h3>
+      <div id="modalBody"></div>
     </div>
   </div>
 
@@ -257,81 +50,105 @@
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWRnam1wa25hcmdseWVmZ3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODI1MzEsImV4cCI6MjA4ODE1ODUzMX0.nBHxEAMhVnmxssgSpsOa_ZUO8DuX8w0Oiz8FEu0QAW8";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    function openModal(title, html){
+    function openModal(title, html) {
       document.getElementById("modalTitle").textContent = title;
       document.getElementById("modalBody").innerHTML = html;
       document.getElementById("modalBack").style.display = "flex";
     }
 
-    function closeModal(){
+    function closeModal() {
       document.getElementById("modalBack").style.display = "none";
       document.getElementById("modalBody").innerHTML = "";
     }
 
-    function openAuthModal(){
+    function setUser(user) {
+      document.getElementById("whoName").textContent = user?.email || "Logged out";
+      document.getElementById("btnLogout").classList.toggle("hidden", !user);
+    }
+
+    function openAuthModal() {
       openModal("Sign up / Sign in", `
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Display name</label>
-            <input id="authName" placeholder="Your name" />
-          </div>
-          <div class="formRow">
-            <label>Email</label>
-            <input id="authEmail" type="email" placeholder="email@example.com" />
-          </div>
+        <div class="formRow">
+          <label>Display name</label>
+          <input id="authName" placeholder="Your name" />
         </div>
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Password</label>
-            <input id="authPass" type="password" placeholder="••••••••" />
-          </div>
-          <div class="formRow">
-            <label>Mode</label>
-            <select id="authMode">
-              <option value="signup">Sign up</option>
-              <option value="signin">Sign in</option>
-            </select>
-          </div>
+        <div class="formRow">
+          <label>Email</label>
+          <input id="authEmail" type="email" placeholder="email@example.com" />
         </div>
-        <button class="btn" style="width:100%;" onclick="doAuth()">Continue</button>
+        <div class="formRow">
+          <label>Password</label>
+          <input id="authPass" type="password" placeholder="••••••••" />
+        </div>
+        <div class="formRow">
+          <label>Mode</label>
+          <select id="authMode">
+            <option value="signup">Sign up</option>
+            <option value="signin">Sign in</option>
+          </select>
+        </div>
+        <button class="btn secondary" onclick="doAuth()">Continue</button>
+        <button class="btn secondary" onclick="closeModal()" style="margin-left:8px;">Cancel</button>
       `);
     }
 
-    async function doAuth(){
+    async function doAuth() {
       const name = document.getElementById("authName").value.trim();
       const email = document.getElementById("authEmail").value.trim();
       const pass = document.getElementById("authPass").value;
       const mode = document.getElementById("authMode").value;
 
-      if(!email || !pass) return alert("Email + password required.");
-      if(mode === "signup" && !name) return alert("Display name required.");
+      if (!email || !pass) {
+        alert("Email and password required.");
+        return;
+      }
 
-      if(mode === "signup"){
+      if (mode === "signup" && !name) {
+        alert("Display name required.");
+        return;
+      }
+
+      if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password: pass,
           options: { data: { display_name: name } }
         });
-        if(error) return alert(error.message);
-        alert("Signed up ✅ Now sign in.");
+        if (error) {
+          alert(error.message);
+          return;
+        }
+        alert("Signed up. Now sign in.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-        if(error) return alert(error.message);
-        alert("Signed in ✅");
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password: pass
+        });
+        if (error) {
+          alert(error.message);
+          return;
+        }
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
       closeModal();
     }
 
-    async function logout(){
+    async function logout() {
       await supabase.auth.signOut();
-      alert("Logged out");
+      setUser(null);
     }
 
     window.openAuthModal = openAuthModal;
     window.closeModal = closeModal;
     window.doAuth = doAuth;
     window.logout = logout;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    })();
   </script>
 </body>
 </html>
