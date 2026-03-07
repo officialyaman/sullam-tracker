@@ -220,12 +220,22 @@
       document.getElementById("modalBody").innerHTML = "";
     }
 
-    function setWho(){
-      document.getElementById("whoName").textContent = profile?.display_name || "Logged out";
-      const role = profile?.role || "guest";
-      document.getElementById("whoRole").textContent = role;
-      document.getElementById("btnLogout").classList.toggle("hidden", !me);
-      document.getElementById("fab").style.display = me ? "flex" : "none";
+function setWho(){
+  const role = profile?.role || "guest";
+  const name = profile?.display_name || me?.email || "Logged out";
+
+  document.getElementById("whoName").textContent = name;
+
+  const roleEl = document.getElementById("whoRole");
+  roleEl.textContent = role;
+  roleEl.className = "badge" + (
+    role === "admin" ? " ok" :
+    role === "teacher" ? " warn" : ""
+  );
+
+  document.getElementById("btnLogout").classList.toggle("hidden", !me);
+  document.getElementById("btnAuth").classList.toggle("hidden", !!me);
+}
     }
 
     function renderTabs(){
@@ -257,24 +267,33 @@
       document.getElementById(map[activeTab]).classList.remove("hidden");
     }
 
-    async function refreshMe(){
-      const { data: { user } } = await client.auth.getUser();
-      me = user || null;
+async function refreshMe(){
+  const { data: { user } } = await client.auth.getUser();
+  me = user || null;
 
-      if(!me){
-        profile = null;
-        return;
-      }
+  if (!me) {
+    profile = null;
+    return;
+  }
 
-      const { data, error } = await client
-        .from("profiles")
-        .select("*")
-        .eq("id", me.id)
-        .single();
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, display_name, role")
+    .eq("id", me.id)
+    .single();
 
-      profile = error ? { display_name: me.email, role: "student" } : data;
-    }
+  if (error || !data) {
+    profile = {
+      id: me.id,
+      display_name: me.user_metadata?.display_name || me.email || "User",
+      role: "student"
+    };
+  } else {
+    profile = data;
+  }
 
+  console.log("PROFILE LOADED:", profile);
+}
     async function loadSettings(){
       const { data } = await client
         .from("app_settings")
@@ -689,18 +708,20 @@
     window.saveAdminSettings = saveAdminSettings;
     window.logout = logout;
 
-    (async () => {
-      await refreshMe();
-      await loadSettings();
-      await renderAll();
+(async () => {
+  await refreshMe();
+  await loadSettings();
+  await renderAll();
 
-      client.auth.onAuthStateChange(async () => {
-        await refreshMe();
-        await loadSettings();
-        activeTab = "home";
-        await renderAll();
-      });
-    })();
+  client.auth.onAuthStateChange(async (_event, session) => {
+    me = session?.user || null;
+    await refreshMe();
+    await loadSettings();
+    await renderAll();
+  });
+})();
   </script>
 </body>
 </html>
+
+
