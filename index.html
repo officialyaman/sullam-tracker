@@ -249,9 +249,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-  window.onerror = (msg, src, line, col) => {
-  alert("JS Error: " + msg + " at line " + line);
-};
+    window.onerror = (msg, src, line) => {
+      alert("JS Error: " + msg + " at line " + line);
+    };
+
     const SUPABASE_URL = "https://amudgjmpknarglyefgxk.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWRnam1wa25hcmdseWVmZ3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODI1MzEsImV4cCI6MjA4ODE1ODUzMX0.nBHxEAMhVnmxssgSpsOa_ZUO8DuX8w0Oiz8FEu0QAW8";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -270,12 +271,12 @@
     let sullamTarget = 1;
 
     const TABS = [
-      { key:"home",      label:"Home",        guard:"any" },
-      { key:"completed", label:"Completed",   guard:"any" },
-      { key:"sullam",    label:"Sullam",      guard:"any" },
-      { key:"abrar",     label:"Abrar Bank",  guard:"abrar_or_teacher_or_admin" },
-      { key:"teacher",   label:"Teacher Zone",guard:"teacher_or_admin" },
-      { key:"admin",     label:"Admin",       guard:"admin" },
+      { key:"home", label:"Home", guard:"any" },
+      { key:"completed", label:"Completed", guard:"any" },
+      { key:"sullam", label:"Sullam", guard:"any" },
+      { key:"abrar", label:"Abrar Bank", guard:"abrar_or_teacher_or_admin" },
+      { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
+      { key:"admin", label:"Admin", guard:"admin" },
     ];
 
     function escapeHtml(s){
@@ -285,7 +286,7 @@
     }
 
     function shortId(id){
-      return id ? (id.slice(0,6)+"…"+id.slice(-4)) : "";
+      return id ? (id.slice(0,6) + "…" + id.slice(-4)) : "";
     }
 
     function openModal(title, html){
@@ -580,6 +581,37 @@
       };
     }
 
+    function openAuthModal(){
+      openModal("Sign up / Sign in", `
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Display name</label>
+            <input id="authName" placeholder="Your name (leaderboard name)" />
+          </div>
+          <div class="formRow">
+            <label>Email</label>
+            <input id="authEmail" type="email" placeholder="email@example.com" />
+          </div>
+        </div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Password</label>
+            <input id="authPass" type="password" placeholder="••••••••" />
+          </div>
+          <div class="formRow">
+            <label>Mode</label>
+            <select id="authMode">
+              <option value="signup">Sign up</option>
+              <option value="signin">Sign in</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" style="width:100%;" onclick="doAuth()">Continue</button>
+        <div class="hr"></div>
+        <div class="notice">After you sign up, set your role to <b>admin</b> in Supabase → profiles table.</div>
+      `);
+    }
+
     async function doAuth(){
       const name = document.getElementById("authName").value.trim();
       const email = document.getElementById("authEmail").value.trim();
@@ -613,37 +645,6 @@
       profile = null;
       activeTab = "home";
       await renderAll();
-    }
-
-    function openAuthModal(){
-      openModal("Sign up / Sign in", `
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Display name</label>
-            <input id="authName" placeholder="Your name (leaderboard name)" />
-          </div>
-          <div class="formRow">
-            <label>Email</label>
-            <input id="authEmail" type="email" placeholder="email@example.com" />
-          </div>
-        </div>
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Password</label>
-            <input id="authPass" type="password" placeholder="••••••••" />
-          </div>
-          <div class="formRow">
-            <label>Mode</label>
-            <select id="authMode">
-              <option value="signup">Sign up</option>
-              <option value="signin">Sign in</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn" style="width:100%;" onclick="doAuth()">Continue</button>
-        <div class="hr"></div>
-        <div class="notice">After you sign up, set your role to <b>admin</b> in Supabase → profiles table.</div>
-      `);
     }
 
     function openRequestModal(){
@@ -830,7 +831,6 @@
 
           row.appendChild(c);
         }
-
         stairEl.appendChild(row);
       }
     }
