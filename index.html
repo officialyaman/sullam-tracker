@@ -5,149 +5,235 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sullam Tracker</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 40px; background: #f5f7fb; }
-    .btn { padding: 12px 18px; border: 0; border-radius: 10px; cursor: pointer; font-weight: bold; }
-    .btn.secondary { background: white; border: 1px solid #ddd; }
-    .hidden { display: none; }
-    .modalBack {
-      position: fixed; inset: 0; background: rgba(0,0,0,.45);
-      display: none; align-items: center; justify-content: center;
+    body{
+      font-family: Arial, sans-serif;
+      background:#f5f7fb;
+      margin:0;
+      padding:40px;
+      color:#111827;
     }
-    .modal {
-      width: min(500px, 92vw); background: white; border-radius: 16px; padding: 20px;
+    .wrap{
+      max-width:700px;
+      margin:0 auto;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:16px;
+      padding:24px;
+      box-shadow:0 10px 25px rgba(0,0,0,.08);
     }
-    .formRow { margin-bottom: 12px; }
-    input, select {
-      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;
+    .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      border:none;
+      border-radius:10px;
+      padding:12px 16px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-dark{
+      background:#111827;
+      color:#fff;
+    }
+    .btn-light{
+      background:#fff;
+      color:#111827;
+      border:1px solid #d1d5db;
+    }
+    .hidden{display:none!important;}
+    .modal-back{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .modal{
+      width:min(460px,100%);
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      box-shadow:0 20px 40px rgba(0,0,0,.2);
+    }
+    .row{margin-bottom:12px;}
+    label{
+      display:block;
+      font-size:14px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+    input,select{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      font-size:14px;
+      box-sizing:border-box;
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top:16px;
+    }
+    .status{
+      margin-top:18px;
+      padding:12px;
+      border-radius:12px;
+      background:#f3f4f6;
     }
   </style>
 </head>
 <body>
-  <h1>Sullam Tracker</h1>
+  <div class="wrap">
+    <div class="top">
+      <h1 style="margin:0;font-size:28px;">Sullam Tracker</h1>
+      <div>
+        <button id="openAuthBtn" class="btn btn-dark">Sign up / Sign in</button>
+        <button id="logoutBtn" class="btn btn-light hidden">Logout</button>
+      </div>
+    </div>
 
-  <p>
-    User:
-    <strong id="whoName">Logged out</strong>
-  </p>
+    <div class="status">
+      User: <strong id="userLabel">Logged out</strong>
+    </div>
+  </div>
 
-  <button class="btn secondary" onclick="openAuthModal()">Sign up / Sign in</button>
-  <button class="btn secondary hidden" id="btnLogout" onclick="logout()">Logout</button>
-
-  <div class="modalBack" id="modalBack">
+  <div id="modalBack" class="modal-back">
     <div class="modal">
-      <h3 id="modalTitle">Auth</h3>
-      <div id="modalBody"></div>
+      <h2 style="margin-top:0;">Sign up / Sign in</h2>
+
+      <div class="row">
+        <label for="authName">Display name</label>
+        <input id="authName" placeholder="Your name" />
+      </div>
+
+      <div class="row">
+        <label for="authEmail">Email</label>
+        <input id="authEmail" type="email" placeholder="email@example.com" />
+      </div>
+
+      <div class="row">
+        <label for="authPass">Password</label>
+        <input id="authPass" type="password" placeholder="••••••••" />
+      </div>
+
+      <div class="row">
+        <label for="authMode">Mode</label>
+        <select id="authMode">
+          <option value="signup">Sign up</option>
+          <option value="signin">Sign in</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button id="continueBtn" class="btn btn-dark">Continue</button>
+        <button id="closeModalBtn" class="btn btn-light">Cancel</button>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    window.onerror = (msg, src, line) => {
-      alert("JS Error: " + msg + " at line " + line);
-    };
-
     const SUPABASE_URL = "https://amudgjmpknarglyefgxk.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWRnam1wa25hcmdseWVmZ3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODI1MzEsImV4cCI6MjA4ODE1ODUzMX0.nBHxEAMhVnmxssgSpsOa_ZUO8DuX8w0Oiz8FEu0QAW8";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    function openModal(title, html) {
-      document.getElementById("modalTitle").textContent = title;
-      document.getElementById("modalBody").innerHTML = html;
-      document.getElementById("modalBack").style.display = "flex";
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const openAuthBtn = document.getElementById("openAuthBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const modalBack = document.getElementById("modalBack");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const continueBtn = document.getElementById("continueBtn");
+    const userLabel = document.getElementById("userLabel");
+
+    function openModal() {
+      modalBack.style.display = "flex";
     }
 
     function closeModal() {
-      document.getElementById("modalBack").style.display = "none";
-      document.getElementById("modalBody").innerHTML = "";
+      modalBack.style.display = "none";
     }
 
-    function setUser(user) {
-      document.getElementById("whoName").textContent = user?.email || "Logged out";
-      document.getElementById("btnLogout").classList.toggle("hidden", !user);
+    function setUserUI(user) {
+      if (user) {
+        userLabel.textContent = user.email || "Signed in";
+        logoutBtn.classList.remove("hidden");
+      } else {
+        userLabel.textContent = "Logged out";
+        logoutBtn.classList.add("hidden");
+      }
     }
 
-    function openAuthModal() {
-      openModal("Sign up / Sign in", `
-        <div class="formRow">
-          <label>Display name</label>
-          <input id="authName" placeholder="Your name" />
-        </div>
-        <div class="formRow">
-          <label>Email</label>
-          <input id="authEmail" type="email" placeholder="email@example.com" />
-        </div>
-        <div class="formRow">
-          <label>Password</label>
-          <input id="authPass" type="password" placeholder="••••••••" />
-        </div>
-        <div class="formRow">
-          <label>Mode</label>
-          <select id="authMode">
-            <option value="signup">Sign up</option>
-            <option value="signin">Sign in</option>
-          </select>
-        </div>
-        <button class="btn secondary" onclick="doAuth()">Continue</button>
-        <button class="btn secondary" onclick="closeModal()" style="margin-left:8px;">Cancel</button>
-      `);
-    }
+    openAuthBtn.addEventListener("click", openModal);
+    closeModalBtn.addEventListener("click", closeModal);
 
-    async function doAuth() {
+    modalBack.addEventListener("click", (e) => {
+      if (e.target === modalBack) closeModal();
+    });
+
+    continueBtn.addEventListener("click", async () => {
       const name = document.getElementById("authName").value.trim();
       const email = document.getElementById("authEmail").value.trim();
-      const pass = document.getElementById("authPass").value;
+      const password = document.getElementById("authPass").value;
       const mode = document.getElementById("authMode").value;
 
-      if (!email || !pass) {
-        alert("Email and password required.");
+      if (!email || !password) {
+        alert("Email and password are required.");
         return;
       }
 
       if (mode === "signup" && !name) {
-        alert("Display name required.");
+        alert("Display name is required for sign up.");
         return;
       }
 
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await client.auth.signUp({
           email,
-          password: pass,
-          options: { data: { display_name: name } }
+          password,
+          options: {
+            data: { display_name: name }
+          }
         });
+
         if (error) {
           alert(error.message);
           return;
         }
-        alert("Signed up. Now sign in.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password: pass
-        });
-        if (error) {
-          alert(error.message);
-          return;
-        }
+
+        alert("Sign up worked. Now switch to Sign in and log in.");
+        return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { error } = await client.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      const { data } = await client.auth.getUser();
+      setUserUI(data.user);
       closeModal();
-    }
+    });
 
-    async function logout() {
-      await supabase.auth.signOut();
-      setUser(null);
-    }
-
-    window.openAuthModal = openAuthModal;
-    window.closeModal = closeModal;
-    window.doAuth = doAuth;
-    window.logout = logout;
+    logoutBtn.addEventListener("click", async () => {
+      await client.auth.signOut();
+      setUserUI(null);
+    });
 
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { data } = await client.auth.getUser();
+      setUserUI(data.user);
     })();
   </script>
 </body>
