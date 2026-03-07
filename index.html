@@ -224,11 +224,22 @@
       document.getElementById("modalBody").innerHTML = "";
     }
 
-    function setWho(){
-      const name = profile?.display_name || me?.email || "Logged out";
-      const role = profile?.role || (me ? "student" : "guest");
+function setWho(){
+  const name = profile?.display_name || me?.email || "Logged out";
+  const role = profile?.role || (me ? "student" : "guest");
 
-      document.getElementById("whoName").textContent = name;
+  document.getElementById("whoName").textContent = name;
+
+  const roleEl = document.getElementById("whoRole");
+  roleEl.textContent = role;
+  roleEl.className = "badge" + (
+    role === "admin" ? " ok" :
+    role === "teacher" ? " warn" : ""
+  );
+
+  document.getElementById("btnAuth").classList.toggle("hidden", !!me);
+  document.getElementById("btnLogout").classList.toggle("hidden", !me);
+}
 
       const roleEl = document.getElementById("whoRole");
       roleEl.textContent = role;
@@ -271,32 +282,38 @@
       document.getElementById(map[activeTab]).classList.remove("hidden");
     }
 
-    async function refreshMe(){
-      const { data: { user } } = await client.auth.getUser();
-      me = user || null;
+async function refreshMe(){
+  const { data: { user } } = await client.auth.getUser();
+  me = user || null;
 
-      if(!me){
-        profile = null;
-        return;
-      }
+  if(!me){
+    profile = null;
+    return;
+  }
 
-      const { data, error } = await client
-        .from("profiles")
-        .select("id, display_name, role")
-        .eq("id", me.id)
-        .single();
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, display_name, role")
+    .eq("id", me.id)
+    .single();
 
-      if(error || !data){
-        profile = {
-          id: me.id,
-          display_name: me.user_metadata?.display_name || me.email || "User",
-          role: "student"
-        };
-      } else {
-        profile = data;
-      }
-    }
+  console.log("PROFILE QUERY:", { data, error });
 
+  if (error) {
+    alert("Profile read failed: " + error.message);
+  }
+
+  if(error || !data){
+    profile = {
+      id: me.id,
+      display_name: me.user_metadata?.display_name || me.email || "User",
+      role: "student"
+    };
+  } else {
+    profile = data;
+  }
+}
+    
     async function loadSettings(){
       const { data } = await client
         .from("app_settings")
