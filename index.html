@@ -35,6 +35,7 @@
     .pill small{color:var(--muted);font-weight:900}
     .btn{border:none;border-radius:12px;padding:10px 12px;background:var(--btn);color:#fff;font-weight:1000;cursor:pointer}
     .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
+    .btn.danger{background:#b91c1c;color:#fff}
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
     .tab{
       padding:9px 12px;border-radius:999px;border:1px solid var(--line);
@@ -110,13 +111,6 @@
     }
     .xbtn{border:none;background:transparent;font-size:20px;cursor:pointer}
 
-    .subTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-    .subTab{
-      padding:8px 12px;border-radius:999px;border:1px solid var(--line);
-      background:#fff;cursor:pointer;font-weight:900;color:var(--btn2)
-    }
-    .subTab.active{background:var(--btn);color:#fff;border-color:transparent}
-
     .sullamShell{
       background:#131313;color:#fff;border-radius:18px;padding:18px;
     }
@@ -127,7 +121,7 @@
       font-size:34px;font-weight:1000;line-height:1.1;
     }
     .sullamSub{
-      font-size:18px;opacity:.92;
+      font-size:16px;opacity:.92;
     }
     .sullamTopStats{
       display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:16px;
@@ -170,6 +164,9 @@
     .sullamCell.selected{
       outline:3px solid #22c55e;
       outline-offset:-3px;
+    }
+    .sullamCell.checkpoint{
+      box-shadow:inset 0 0 0 3px #60a5fa;
     }
     .sullamBtns{
       display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:24px;
@@ -214,14 +211,14 @@
     <div id="viewHome" class="grid">
       <div class="card">
         <div class="cardHead" style="background:linear-gradient(135deg,var(--purple2),#c4b5fd);color:#1f1147;">
-          <h3>Qadeem Points</h3><small id="qadeemMeta">—</small>
+          <h3>My Progress</h3><small>Current approved step</small>
         </div>
-        <div class="cardBody" id="qadeemList"></div>
+        <div class="cardBody" id="homeLeft"></div>
       </div>
 
       <div class="card">
         <div class="leaderHeader">
-          <div style="font-size:18px;">Total Points Leaderboard</div>
+          <div style="font-size:18px;">Sullam Leaderboard</div>
           <div class="sub" id="totalMeta">—</div>
         </div>
         <div class="podium" id="podium"></div>
@@ -230,27 +227,30 @@
 
       <div class="card">
         <div class="cardHead" style="background:linear-gradient(135deg,var(--blue2),#93c5fd);color:#06253e;">
-          <h3>Jadeed Points</h3><small id="jadeedMeta">—</small>
+          <h3>Checkpoint Rules</h3><small>Teacher-focused steps</small>
         </div>
-        <div class="cardBody" id="jadeedList"></div>
+        <div class="cardBody">
+          <div class="notice">
+            Checkpoints: 11, 22, 33, 44, 50, 51, 52, 53, 54, 55
+            <br><br>
+            Students select a teacher and cannot move forward until the request is accepted.
+          </div>
+        </div>
       </div>
     </div>
 
     <div id="viewMyQuran" class="card hidden">
-      <div class="cardHead"><h3>My Quran</h3><small>Old • New • Sullam</small></div>
-      <div class="cardBody">
-        <div class="subTabs" id="myQuranTabs"></div>
-        <div id="myQuranBody"></div>
-      </div>
+      <div class="cardHead"><h3>My Quran</h3><small>Sullam only</small></div>
+      <div class="cardBody" id="myQuranBody"></div>
     </div>
 
     <div id="viewTeacher" class="card hidden">
-      <div class="cardHead"><h3>Teacher Zone</h3><small>Pending requests</small></div>
+      <div class="cardHead"><h3>Teacher Zone</h3><small>Pending requests + track students</small></div>
       <div class="cardBody" id="teacherBody"></div>
     </div>
 
     <div id="viewAdmin" class="card hidden">
-      <div class="cardHead"><h3>Admin</h3><small>Leaderboard settings</small></div>
+      <div class="cardHead"><h3>Admin</h3><small>Students + leaderboard settings</small></div>
       <div class="cardBody" id="adminBody"></div>
     </div>
   </div>
@@ -277,9 +277,11 @@
     let profile = null;
     let settings = null;
     let activeTab = "home";
-    let myQuranTab = "jadeed";
     let approvedStep = 0;
     let targetStep = 1;
+    let selfRoster = null;
+
+    const CHECKPOINT_STEPS = new Set([11,22,33,44,50,51,52,53,54,55]);
 
     const TABS = [
       { key:"home", label:"Home", guard:"any" },
@@ -287,11 +289,6 @@
       { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
       { key:"admin", label:"Admin", guard:"admin" }
     ];
-
-const MY_QURAN_TABS = [
-  { key:"jadeed", label:"New (Jadeed)" },
-  { key:"qadeem", label:"Old (Qadeem)" }
-];
 
     function escapeHtml(s){
       return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -323,7 +320,6 @@ const MY_QURAN_TABS = [
       const role = profile?.role || (me ? "student" : "guest");
 
       document.getElementById("whoName").textContent = name;
-
       const roleEl = document.getElementById("whoRole");
       roleEl.textContent = role;
       roleEl.className = "badge" + (
@@ -370,6 +366,7 @@ const MY_QURAN_TABS = [
 
       if(!me){
         profile = null;
+        selfRoster = null;
         return;
       }
 
@@ -388,6 +385,14 @@ const MY_QURAN_TABS = [
           role: "student"
         };
       }
+
+      const { data: roster } = await sb
+        .from("student_roster")
+        .select("*")
+        .eq("linked_user_id", me.id)
+        .limit(1);
+
+      selfRoster = roster && roster.length ? roster[0] : null;
     }
 
     async function loadSettings(){
@@ -400,10 +405,7 @@ const MY_QURAN_TABS = [
       settings = data || {
         leaderboard_enabled: false,
         leaderboard_start_at: null,
-        leaderboard_end_at: null,
-        points_qadeem: 2000,
-        points_jadeed: 2000,
-        points_sullam: 6000
+        leaderboard_end_at: null
       };
     }
 
@@ -415,6 +417,12 @@ const MY_QURAN_TABS = [
       if(start && now < start) return false;
       if(end && now > end) return false;
       return true;
+    }
+
+    async function bootData(){
+      await loadMe();
+      await loadSettings();
+      await loadApprovedStep();
     }
 
     async function openAuth(){
@@ -499,8 +507,8 @@ const MY_QURAN_TABS = [
       }
       me = null;
       profile = null;
+      selfRoster = null;
       activeTab = "home";
-      myQuranTab = "jadeed";
       approvedStep = 0;
       targetStep = 1;
       await renderAll();
@@ -509,52 +517,29 @@ const MY_QURAN_TABS = [
     async function fetchLeaderboard(){
       if(!leaderboardOpenNow()) return [];
 
-      const { data: rows } = await sb.from("leaderboard_points").select("*");
-      const all = rows || [];
-      const ids = all.map(x => x.user_id);
+      const { data } = await sb
+        .from("current_sullam_progress")
+        .select("*")
+        .order("approved_step", { ascending:false });
 
-      let nameMap = new Map();
-      if(ids.length){
-        const { data: profs } = await sb.from("profiles").select("id,display_name").in("id", ids);
-        if(profs) nameMap = new Map(profs.map(p => [p.id, p.display_name]));
-      }
-
-      return all.map(x => ({
-        ...x,
-        name: nameMap.get(x.user_id) || "User"
-      }));
-    }
-
-    function renderPointsList(list, field){
-      if(!list.length) return `<div class="meta">No data yet.</div>`;
-      const sorted = [...list].sort((a,b)=>Number(b[field]||0)-Number(a[field]||0));
-      return sorted.slice(0,10).map((x,i)=>`
-        <div class="row">
-          <div>
-            <strong>#${i+1} ${escapeHtml(x.name)}</strong>
-            <div class="meta">${Math.round(Number(x[field]||0))} points</div>
-          </div>
-          <div class="right"><strong>${Math.round(Number(x[field]||0))}</strong></div>
-        </div>
-      `).join("");
+      return data || [];
     }
 
     async function renderHome(){
+      document.getElementById("homeLeft").innerHTML = me
+        ? `<div class="notice">Approved step: <b>${approvedStep}</b> / 55</div>`
+        : `<div class="notice">Sign in to track your Sullam.</div>`;
+
       const rows = await fetchLeaderboard();
 
       if(!leaderboardOpenNow()){
         document.getElementById("totalMeta").textContent = "Hidden right now";
         document.getElementById("podium").innerHTML = "";
         document.getElementById("totalList").innerHTML = `<div class="notice">Leaderboard is off or outside the active date/time window.</div>`;
-        document.getElementById("qadeemMeta").textContent = "Hidden";
-        document.getElementById("jadeedMeta").textContent = "Hidden";
-        document.getElementById("qadeemList").innerHTML = `<div class="meta">Hidden</div>`;
-        document.getElementById("jadeedList").innerHTML = `<div class="meta">Hidden</div>`;
         return;
       }
 
-      rows.sort((a,b)=>Number(b.total_points||0)-Number(a.total_points||0));
-      document.getElementById("totalMeta").textContent = `${rows.length} users`;
+      document.getElementById("totalMeta").textContent = `${rows.length} students`;
 
       const podium = document.getElementById("podium");
       podium.innerHTML = "";
@@ -567,162 +552,61 @@ const MY_QURAN_TABS = [
         el.className = `podiumCard ${p.cls}`;
         el.innerHTML = item ? `
           <div class="rank">#${p.slot}</div>
-          <h4 style="margin:6px 0 4px 0;">${escapeHtml(item.name)}</h4>
-          <div style="font-weight:1000;font-size:18px;">${Math.round(Number(item.total_points||0))}</div>
-          <div class="meta">points</div>
+          <h4 style="margin:6px 0 4px 0;">${escapeHtml(item.display_student_name)}</h4>
+          <div style="font-weight:1000;font-size:18px;">Step ${Math.round(Number(item.approved_step||0))}</div>
         ` : `
           <div class="rank">#${p.slot}</div>
           <h4>—</h4>
-          <div style="font-weight:1000;font-size:18px;">0</div>
-          <div class="meta">points</div>
+          <div style="font-weight:1000;font-size:18px;">Step 0</div>
         `;
         podium.appendChild(el);
       }
 
-      document.getElementById("totalList").innerHTML = renderPointsList(rows, "total_points");
-      document.getElementById("qadeemList").innerHTML = renderPointsList(rows, "qadeem_points");
-      document.getElementById("jadeedList").innerHTML = renderPointsList(rows, "jadeed_points");
-      document.getElementById("qadeemMeta").textContent = "Live";
-      document.getElementById("jadeedMeta").textContent = "Live";
-    }
-
-async function renderMyQuranBody(){
-  renderMyQuranTabs();
-
-  if(myQuranTab === "jadeed"){
-    document.getElementById("myQuranBody").innerHTML = renderJadeedForm();
-    document.getElementById("saveJadeedBtn").addEventListener("click", () => saveMemorization("jadeed"));
-  } else if(myQuranTab === "qadeem"){
-    document.getElementById("myQuranBody").innerHTML = await renderQadeemToday();
-  }
-}
-    async function saveMemorization(type){
-      if(!me || !profile) return;
-
-      const surah_name = document.getElementById("mqSurah").value.trim();
-      const page_number = Number(document.getElementById("mqPage").value || 0);
-      const ayah_from = Number(document.getElementById("mqAyahFrom").value || 0);
-      const ayah_to = Number(document.getElementById("mqAyahTo").value || 0);
-      const pages_count = Number(document.getElementById("mqPagesCount").value || 1);
-      const teacher_name = document.getElementById("mqTeacher").value.trim();
-      const note = document.getElementById("mqNote").value.trim();
-
-      if(!surah_name || !page_number) {
-        alert("Enter surah and page.");
-        return;
-      }
-
-      const payload = {
-        user_id: me.id,
-        type,
-        surah_name,
-        page_number,
-        ayah_from: ayah_from || null,
-        ayah_to: ayah_to || null,
-        pages_count,
-        teacher_name,
-        note
-      };
-
-      const { error } = await sb.from("memorization_requests").insert({
-        ...payload,
-        status: "pending"
-      });
-
-      if(error){
-        alert(error.message);
-        return;
-      }
-
-      alert("Sent to teacher for approval ✅");
-    }
-
-    function renderJadeedForm(){
-      return `
-        <div class="notice">New memorization. It will not count until teacher accepts.</div>
-        <div class="hr"></div>
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Surah name</label>
-            <input id="mqSurah" placeholder="e.g. سورة نوح" />
-          </div>
-          <div class="formRow">
-            <label>Page number</label>
-            <input id="mqPage" type="number" min="1" />
-          </div>
-        </div>
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Ayah from</label>
-            <input id="mqAyahFrom" type="number" min="1" />
-          </div>
-          <div class="formRow">
-            <label>Ayah to</label>
-            <input id="mqAyahTo" type="number" min="1" />
-          </div>
-        </div>
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Pages count</label>
-            <input id="mqPagesCount" type="number" min="1" value="1" />
-          </div>
-          <div class="formRow">
-            <label>Teacher name</label>
-            <input id="mqTeacher" placeholder="Teacher name" />
-          </div>
-        </div>
-        <div class="formRow">
-          <label>Note</label>
-          <textarea id="mqNote"></textarea>
-        </div>
-        <button class="btn" id="saveJadeedBtn">Send Jadeed</button>
-      `;
-    }
-
-    async function renderQadeemToday(){
-      if(!me) return `<div class="notice">Please log in first.</div>`;
-
-      const { data, error } = await sb
-        .from("qadeem_reviews")
-        .select("*")
-        .eq("user_id", me.id)
-        .order("review_day", { ascending:true });
-
-      if(error){
-        return `<div class="notice">${escapeHtml(error.message)}</div>`;
-      }
-
-      const rows = data || [];
-      if(!rows.length){
-        return `
-          <div class="notice">
-            Qadeem reviews appear after an approved Sullam record.
-            <br><br>
-            Day 1 = 5 times
-            <br>
-            Day 2 = 4 times
-            <br>
-            Day 3 = 3 times
-            <br>
-            Day 4 = 2 times
-            <br>
-            Day 5 = 1 time
-          </div>
-        `;
-      }
-
-      return rows.map(r => `
+      document.getElementById("totalList").innerHTML = rows.slice(0,10).map((x,i)=>`
         <div class="row">
           <div>
-            <strong>${escapeHtml(r.surah_name)}</strong>
-            <div class="meta">Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
-            <div class="meta">Day ${r.review_day} • Required ${r.required_repetitions} • Completed ${r.completed_repetitions}</div>
+            <strong>#${i+1} ${escapeHtml(x.display_student_name)}</strong>
+            <div class="meta">Approved step ${Math.round(Number(x.approved_step||0))}</div>
           </div>
-          <div class="right">
-            <span class="badge ${r.status === 'done' ? 'ok' : 'warn'}">${r.status}</span>
-          </div>
+          <div class="right"><strong>${Math.round(Number(x.approved_step||0))}</strong></div>
         </div>
-      `).join("");
+      `).join("") || `<div class="meta">No data yet.</div>`;
+    }
+
+    async function loadApprovedStep(){
+      if(!me){
+        approvedStep = 0;
+        targetStep = 1;
+        return;
+      }
+
+      if(selfRoster){
+        const { data } = await sb
+          .from("current_sullam_progress")
+          .select("*")
+          .eq("student_roster_id", selfRoster.id)
+          .limit(1);
+
+        approvedStep = data && data.length ? Number(data[0].approved_step || 0) : 0;
+      } else {
+        const { data } = await sb
+          .from("current_sullam_progress")
+          .select("*")
+          .eq("user_id", me.id)
+          .limit(1);
+
+        approvedStep = data && data.length ? Number(data[0].approved_step || 0) : 0;
+      }
+
+      targetStep = Math.min(55, Math.max(1, approvedStep + 1));
+    }
+
+    async function fetchTeachers(){
+      const { data } = await sb
+        .from("profiles")
+        .select("id, display_name, role")
+        .in("role", ["teacher","admin"]);
+      return data || [];
     }
 
     function buildSullamRows() {
@@ -740,18 +624,71 @@ async function renderMyQuranBody(){
       ];
     }
 
-    function renderSullam() {
+    async function renderMyQuran(){
       const body = document.getElementById("myQuranBody");
+
+      if(!me){
+        body.innerHTML = `<div class="notice">Please sign in first.</div>`;
+        return;
+      }
+
+      const teachers = await fetchTeachers();
+      const teacherOptions = teachers.map(t => `<option value="${t.id}">${escapeHtml(t.display_name)}</option>`).join("");
+
       body.innerHTML = `
+        <div class="notice">
+          Students must select a teacher and cannot move to the next official step until the request is accepted.
+          <br><br>
+          Teacher-focused steps: 11, 22, 33, 44, 50-55
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Teacher</label>
+            <select id="studentTeacherId">
+              <option value="">Select teacher</option>
+              ${teacherOptions}
+            </select>
+          </div>
+          <div class="formRow">
+            <label>Selected step</label>
+            <input id="selectedStepView" value="${targetStep}" readonly />
+          </div>
+        </div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Surah name</label>
+            <input id="sSurah" placeholder="e.g. سورة الملك" />
+          </div>
+          <div class="formRow">
+            <label>Page number</label>
+            <input id="sPage" type="number" min="1" />
+          </div>
+        </div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Ayah from</label>
+            <input id="sAyahFrom" type="number" min="1" />
+          </div>
+          <div class="formRow">
+            <label>Ayah to</label>
+            <input id="sAyahTo" type="number" min="1" />
+          </div>
+        </div>
+
+        <div class="formRow">
+          <label>Note</label>
+          <textarea id="sNote"></textarea>
+        </div>
+
         <div class="sullamShell">
           <div class="sullamHeader">
-            <div class="sullamTitle">سورة نوح</div>
-            <div class="sullamSub">Ayahs: 3 - 4</div>
-          </div>
-
-          <div class="sullamTopStats">
-            <div class="sStat">Approved: <span id="approvedStepLabel">${approvedStep}</span>/55</div>
-            <div class="sStat">Selected: <span id="targetStepLabel">${targetStep}</span>/55</div>
+            <div class="sullamTitle">Sullam</div>
+            <div class="sullamSub">Approved: ${approvedStep} / 55 • Selected: ${targetStep} / 55</div>
           </div>
 
           <div class="stairWrap">
@@ -760,7 +697,7 @@ async function renderMyQuranBody(){
 
           <div class="sullamBtns">
             <button id="btnStepBack" class="roundAction redBtn">←<span>-1 step</span></button>
-            <button id="btnStepConfirm" class="roundAction greenBtn">✓<span>Confirm</span></button>
+            <button id="btnStepConfirm" class="roundAction greenBtn">✓<span>Send request</span></button>
             <button id="btnStepSkip" class="roundAction orangeBtn">→<span>Skip to step</span></button>
           </div>
         </div>
@@ -781,10 +718,12 @@ async function renderMyQuranBody(){
           if (num <= approvedStep) cell.classList.add("done");
           if (num === approvedStep + 1) cell.classList.add("current");
           if (num === targetStep) cell.classList.add("selected");
+          if (CHECKPOINT_STEPS.has(num)) cell.classList.add("checkpoint");
 
           cell.addEventListener("click", () => {
+            if(num <= approvedStep) return;
             targetStep = num;
-            renderSullam();
+            renderMyQuran();
           });
 
           row.appendChild(cell);
@@ -795,153 +734,76 @@ async function renderMyQuranBody(){
 
       document.getElementById("btnStepBack").addEventListener("click", () => {
         targetStep = Math.max(1, targetStep - 1);
-        renderSullam();
+        renderMyQuran();
       });
 
-      document.getElementById("btnStepConfirm").addEventListener("click", confirmSullamStep);
-
       document.getElementById("btnStepSkip").addEventListener("click", () => {
-        const v = prompt("Skip to step (1-55):", String(targetStep));
+        const v = prompt("Skip to step (only future steps):", String(targetStep));
         if (v === null) return;
         const n = Number(v);
-        if (!Number.isFinite(n) || n < 1 || n > 55) {
-          alert("Enter a number from 1 to 55.");
+        if (!Number.isFinite(n) || n < approvedStep + 1 || n > 55) {
+          alert(`Enter a step from ${approvedStep + 1} to 55.`);
           return;
         }
         targetStep = n;
-        renderSullam();
+        renderMyQuran();
       });
+
+      document.getElementById("btnStepConfirm").addEventListener("click", sendStudentRequest);
     }
 
-    async function loadApprovedStep(){
-      if(!me){
-        approvedStep = 0;
-        targetStep = 1;
+    async function sendStudentRequest(){
+      if(!me || !profile) return;
+
+      const teacherId = document.getElementById("studentTeacherId").value;
+      const surah = document.getElementById("sSurah").value.trim();
+      const page = Number(document.getElementById("sPage").value || 0);
+      const ayahFrom = Number(document.getElementById("sAyahFrom").value || 0) || null;
+      const ayahTo = Number(document.getElementById("sAyahTo").value || 0) || null;
+      const note = document.getElementById("sNote").value.trim();
+
+      if(!teacherId){
+        alert("Select a teacher.");
+        return;
+      }
+      if(!surah || !page){
+        alert("Enter surah and page.");
+        return;
+      }
+      if(targetStep !== approvedStep + 1){
+        alert("You cannot progress until the previous step is accepted.");
         return;
       }
 
-      const { data } = await sb
-        .from("sullam_progress")
-        .select("step_number")
-        .eq("user_id", me.id)
-        .order("step_number", { ascending:false })
-        .limit(1);
-
-      if(!data || !data.length){
-        approvedStep = 0;
-      } else {
-        approvedStep = Number(data[0].step_number || 0);
-      }
-
-      targetStep = Math.min(55, Math.max(1, approvedStep + 1));
-    }
-
-    async function openTeacherPickerForSullam() {
-      const { data, error } = await sb
-        .from("profiles")
-        .select("id, display_name")
-        .eq("role", "teacher");
-
-      if (error) {
-        alert(error.message);
-        return null;
-      }
-
-      const teachers = data || [];
-      if (!teachers.length) {
-        alert("No teachers found.");
-        return null;
-      }
-
-      return new Promise((resolve) => {
-        openModal("Select Teacher", `
-          <input id="teacherSearch" placeholder="Search teacher name..." style="margin-bottom:12px;" />
-          <div id="teacherListBox" style="max-height:300px;overflow:auto;border:1px solid #e5e7eb;border-radius:12px;"></div>
-        `);
-
-        const listBox = document.getElementById("teacherListBox");
-        const search = document.getElementById("teacherSearch");
-
-        function draw(list) {
-          listBox.innerHTML = list.map(t => `
-            <div class="teacherOption" data-id="${t.id}" data-name="${escapeHtml(t.display_name || "Teacher")}">
-              ${escapeHtml(t.display_name || "Teacher")}
-            </div>
-          `).join("");
-
-          [...listBox.querySelectorAll(".teacherOption")].forEach(el => {
-            el.addEventListener("click", () => {
-              const teacher = {
-                id: el.getAttribute("data-id"),
-                name: el.getAttribute("data-name")
-              };
-              closeModal();
-              resolve(teacher);
-            });
-          });
-        }
-
-        draw(teachers);
-
-        search.addEventListener("input", () => {
-          const q = search.value.trim().toLowerCase();
-          draw(teachers.filter(t => (t.display_name || "").toLowerCase().includes(q)));
-        });
-      });
-    }
-
-    async function confirmSullamStep() {
-      if (!me || !profile) {
-        alert("Please sign in first.");
+      const teachers = await fetchTeachers();
+      const teacher = teachers.find(t => t.id === teacherId);
+      if(!teacher){
+        alert("Teacher not found.");
         return;
       }
-
-      if (targetStep !== approvedStep + 1) {
-        alert("You can only request the next step after approval.");
-        return;
-      }
-
-      const teacher = await openTeacherPickerForSullam();
-      if (!teacher) return;
 
       const payload = {
+        student_roster_id: selfRoster?.id || null,
         user_id: me.id,
-        type: "sullam",
-        surah_name: "سورة نوح",
-        page_number: 570,
-        ayah_from: 3,
-        ayah_to: 4,
-        pages_count: 1,
-        step_number: targetStep,
+        display_student_name: selfRoster?.name || profile.display_name || me.email,
         teacher_id: teacher.id,
-        teacher_name: teacher.name,
-        note: ""
+        teacher_name: teacher.display_name,
+        step_number: targetStep,
+        surah_name: surah,
+        page_number: page,
+        ayah_from: ayahFrom,
+        ayah_to: ayahTo,
+        note,
+        status: "pending"
       };
 
-      const { error } = await sb.from("memorization_requests").insert({
-        ...payload,
-        status: "pending"
-      });
-
+      const { error } = await sb.from("sullam_requests").insert(payload);
       if(error){
         alert(error.message);
         return;
       }
 
-      alert("Sullam sent to teacher ✅");
-    }
-
-    async function renderMyQuranBody(){
-      renderMyQuranTabs();
-
-      if(myQuranTab === "jadeed"){
-        document.getElementById("myQuranBody").innerHTML = renderJadeedForm();
-        document.getElementById("saveJadeedBtn").addEventListener("click", () => saveMemorization("jadeed"));
-      } else if(myQuranTab === "qadeem"){
-        document.getElementById("myQuranBody").innerHTML = await renderQadeemToday();
-      } else {
-        renderSullam();
-      }
+      alert("Request sent to teacher ✅");
     }
 
     async function renderTeacher(){
@@ -951,8 +813,8 @@ async function renderMyQuranBody(){
         return;
       }
 
-      const { data, error } = await sb
-        .from("memorization_requests")
+      const { data: requests, error } = await sb
+        .from("sullam_requests")
         .select("*")
         .eq("status","pending")
         .order("created_at", { ascending:false });
@@ -962,92 +824,198 @@ async function renderMyQuranBody(){
         return;
       }
 
-      const reqs = data || [];
-      if(!reqs.length){
-        body.innerHTML = `<div class="notice">No pending requests.</div>`;
-        return;
-      }
+      const { data: students } = await sb
+        .from("student_roster")
+        .select("*")
+        .order("name", { ascending:true });
 
-      body.innerHTML = reqs.map(r => `
-        <div class="row">
-          <div>
-            <strong>${escapeHtml(r.type)}</strong>
-            <div class="meta">${escapeHtml(r.surah_name)} • Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
-            <div class="meta">${r.type === "sullam" ? `Step ${r.step_number}` : `${Number(r.pages_count || 0)} pages`} • Teacher: ${escapeHtml(r.teacher_name || "—")}</div>
+      body.innerHTML = `
+        <div class="notice"><b>Pending Requests</b></div>
+        <div class="hr"></div>
+        ${
+          (requests || []).length ? (requests || []).map(r => `
+            <div class="row">
+              <div>
+                <strong>${escapeHtml(r.display_student_name)}</strong>
+                <div class="meta">Step ${r.step_number} • ${escapeHtml(r.surah_name)} • Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
+                <div class="meta">Teacher: ${escapeHtml(r.teacher_name || "—")}</div>
+              </div>
+              <div class="right" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn approve-btn" data-id="${r.id}">Approve</button>
+                <button class="btn danger deny-btn" data-id="${r.id}">Deny</button>
+              </div>
+            </div>
+          `).join("") : `<div class="notice">No pending requests.</div>`
+        }
+
+        <div class="hr"></div>
+        <div class="notice"><b>Track Students Directly</b></div>
+        <div class="hr"></div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Student</label>
+            <select id="trackStudentId">
+              <option value="">Select student</option>
+              ${(students || []).map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("")}
+            </select>
           </div>
-          <div class="right">
-            <button class="btn approve-btn" data-id="${r.id}">Approve</button>
+          <div class="formRow">
+            <label>Step number</label>
+            <input id="trackStep" type="number" min="1" max="55" />
           </div>
         </div>
-      `).join("");
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Surah name</label>
+            <input id="trackSurah" />
+          </div>
+          <div class="formRow">
+            <label>Page number</label>
+            <input id="trackPage" type="number" min="1" />
+          </div>
+        </div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Ayah from</label>
+            <input id="trackAyahFrom" type="number" min="1" />
+          </div>
+          <div class="formRow">
+            <label>Ayah to</label>
+            <input id="trackAyahTo" type="number" min="1" />
+          </div>
+        </div>
+
+        <div class="formRow">
+          <label>Note</label>
+          <textarea id="trackNote"></textarea>
+        </div>
+
+        <button class="btn" id="teacherTrackBtn">Save Directly as Approved</button>
+      `;
 
       [...body.querySelectorAll(".approve-btn")].forEach(btn => {
         btn.addEventListener("click", () => approveReq(btn.dataset.id));
       });
+      [...body.querySelectorAll(".deny-btn")].forEach(btn => {
+        btn.addEventListener("click", () => denyReq(btn.dataset.id));
+      });
+      document.getElementById("teacherTrackBtn").addEventListener("click", teacherTrackStudent);
     }
 
     async function approveReq(id){
-      const { data: r, error } = await sb.from("memorization_requests").select("*").eq("id", id).single();
+      const { data: r, error } = await sb.from("sullam_requests").select("*").eq("id", id).single();
       if(error){
         alert(error.message);
         return;
       }
 
-      const { data: rec, error: e1 } = await sb.from("memorization_records").insert({
+      const { error: e1 } = await sb.from("sullam_records").insert({
+        student_roster_id: r.student_roster_id,
         user_id: r.user_id,
-        type: r.type,
+        display_student_name: r.display_student_name,
+        teacher_id: r.teacher_id,
+        teacher_name: r.teacher_name,
+        step_number: r.step_number,
         surah_name: r.surah_name,
         page_number: r.page_number,
         ayah_from: r.ayah_from,
         ayah_to: r.ayah_to,
-        pages_count: r.pages_count,
-        step_number: r.step_number,
-        teacher_id: r.teacher_id,
-        teacher_name: r.teacher_name,
         note: r.note,
-        confirmed_by: me.id
-      }).select().single();
+        approved_by: me.id
+      });
 
       if(e1){
         alert(e1.message);
         return;
       }
 
-      if(r.type === "sullam"){
-        const { error: e2a } = await sb.from("sullam_progress").insert({
-          user_id: r.user_id,
-          step_number: r.step_number,
-          surah_name: r.surah_name,
-          page_number: r.page_number,
-          ayah_from: r.ayah_from,
-          ayah_to: r.ayah_to,
-          approved_record_id: rec.id
-        });
+      const { error: e2 } = await sb
+        .from("sullam_requests")
+        .update({
+          status: "approved",
+          handled_by: me.id,
+          handled_at: new Date().toISOString()
+        })
+        .eq("id", id);
 
-        if(e2a){
-          alert(e2a.message);
-          return;
-        }
-
-        const { error: e2b } = await sb.rpc("create_qadeem_reviews_for_record", { p_record_id: rec.id });
-        if(e2b){
-          console.error(e2b);
-        }
-      }
-
-      const { error: e3 } = await sb.from("memorization_requests").update({
-        status: "approved",
-        handled_by: me.id,
-        handled_at: new Date().toISOString()
-      }).eq("id", id);
-
-      if(e3){
-        alert(e3.message);
+      if(e2){
+        alert(e2.message);
         return;
       }
 
       alert("Approved ✅");
-      await loadApprovedStep();
+      await bootData();
+      await renderAll();
+    }
+
+    async function denyReq(id){
+      const { error } = await sb
+        .from("sullam_requests")
+        .update({
+          status: "denied",
+          handled_by: me.id,
+          handled_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if(error){
+        alert(error.message);
+        return;
+      }
+
+      alert("Denied.");
+      await renderAll();
+    }
+
+    async function teacherTrackStudent(){
+      const studentId = document.getElementById("trackStudentId").value;
+      const step = Number(document.getElementById("trackStep").value || 0);
+      const surah = document.getElementById("trackSurah").value.trim();
+      const page = Number(document.getElementById("trackPage").value || 0);
+      const ayahFrom = Number(document.getElementById("trackAyahFrom").value || 0) || null;
+      const ayahTo = Number(document.getElementById("trackAyahTo").value || 0) || null;
+      const note = document.getElementById("trackNote").value.trim();
+
+      if(!studentId || !step || !surah || !page){
+        alert("Fill student, step, surah, and page.");
+        return;
+      }
+
+      const { data: student, error } = await sb
+        .from("student_roster")
+        .select("*")
+        .eq("id", studentId)
+        .single();
+
+      if(error){
+        alert(error.message);
+        return;
+      }
+
+      const { error: e1 } = await sb.from("sullam_records").insert({
+        student_roster_id: student.id,
+        user_id: student.linked_user_id,
+        display_student_name: student.name,
+        teacher_id: me.id,
+        teacher_name: profile.display_name,
+        step_number: step,
+        surah_name: surah,
+        page_number: page,
+        ayah_from: ayahFrom,
+        ayah_to: ayahTo,
+        note,
+        approved_by: me.id
+      });
+
+      if(e1){
+        alert(e1.message);
+        return;
+      }
+
+      alert("Saved directly as approved ✅");
       await renderAll();
     }
 
@@ -1065,8 +1033,32 @@ async function renderMyQuranBody(){
         return;
       }
 
+      const teachers = await fetchTeachers();
+      const { data: roster } = await sb.from("student_roster").select("*").order("created_at", { ascending:false });
+
       body.innerHTML = `
-        <div class="notice">Leaderboard only shows if enabled and current time is between the start and end.</div>
+        <div class="notice"><b>Create Students</b> (roster students for teachers to track)</div>
+        <div class="hr"></div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Student name</label>
+            <input id="newStudentName" />
+          </div>
+          <div class="formRow">
+            <label>Assign teacher</label>
+            <select id="newStudentTeacher">
+              <option value="">No teacher</option>
+              ${teachers.map(t => `<option value="${t.id}">${escapeHtml(t.display_name)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <button class="btn" id="createStudentBtn">Create Student</button>
+
+        <div class="hr"></div>
+
+        <div class="notice"><b>Leaderboard Settings</b></div>
         <div class="hr"></div>
 
         <div class="twoCol">
@@ -1093,9 +1085,50 @@ async function renderMyQuranBody(){
             <button class="btn" id="saveAdminBtn" style="width:100%;">Save Settings</button>
           </div>
         </div>
+
+        <div class="hr"></div>
+
+        <div class="notice"><b>Students</b></div>
+        <div class="hr"></div>
+
+        ${
+          (roster || []).map(s => `
+            <div class="row">
+              <div>
+                <strong>${escapeHtml(s.name)}</strong>
+                <div class="meta">Student ID: ${s.id}</div>
+              </div>
+            </div>
+          `).join("") || `<div class="notice">No students yet.</div>`
+        }
       `;
 
+      document.getElementById("createStudentBtn").addEventListener("click", createStudentRoster);
       document.getElementById("saveAdminBtn").addEventListener("click", saveAdminSettings);
+    }
+
+    async function createStudentRoster(){
+      const name = document.getElementById("newStudentName").value.trim();
+      const teacherId = document.getElementById("newStudentTeacher").value || null;
+
+      if(!name){
+        alert("Enter student name.");
+        return;
+      }
+
+      const { error } = await sb.from("student_roster").insert({
+        name,
+        teacher_id: teacherId,
+        created_by: me.id
+      });
+
+      if(error){
+        alert(error.message);
+        return;
+      }
+
+      alert("Student created ✅");
+      await renderAll();
     }
 
     async function saveAdminSettings(){
@@ -1123,18 +1156,12 @@ async function renderMyQuranBody(){
       await renderAll();
     }
 
-    async function bootData(){
-      await loadMe();
-      await loadSettings();
-      await loadApprovedStep();
-    }
-
     async function renderAll(){
       setWho();
       renderTabs();
       showView();
       await renderHome();
-      if(activeTab === "myquran") await renderMyQuranBody();
+      if(activeTab === "myquran") await renderMyQuran();
       if(activeTab === "teacher") await renderTeacher();
       if(activeTab === "admin") await renderAdmin();
     }
