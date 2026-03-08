@@ -99,16 +99,84 @@
       box-shadow:0 18px 35px rgba(2,6,23,.22);cursor:pointer;display:none;align-items:center;justify-content:center
     }
     .modalBack{
-      position:fixed;inset:0;background:rgba(2,6,23,.45);display:none;align-items:center;justify-content:center;padding:16px
+      position:fixed;inset:0;background:rgba(2,6,23,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;
     }
     .modal{
-      width:min(760px,100%);border-radius:20px;background:rgba(255,255,255,.92);
+      width:min(760px,100%);border-radius:20px;background:rgba(255,255,255,.96);
       border:1px solid var(--line);box-shadow:0 30px 80px rgba(2,6,23,.35);overflow:hidden;backdrop-filter:blur(12px)
     }
     .modalHead{
       padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);font-weight:1000
     }
     .xbtn{border:none;background:transparent;font-size:20px;cursor:pointer}
+
+    .sullamShell{
+      background:#131313;color:#fff;border-radius:18px;padding:18px;
+    }
+    .sullamHeader{
+      text-align:center;margin-bottom:18px;
+    }
+    .sullamTitle{
+      font-size:34px;font-weight:1000;line-height:1.1;
+    }
+    .sullamSub{
+      font-size:18px;opacity:.92;
+    }
+    .sullamTopStats{
+      display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:16px;
+    }
+    .sStat{
+      background:rgba(255,255,255,.08);
+      padding:10px 16px;border-radius:14px;font-weight:900;
+    }
+    .stairWrap{
+      display:flex;justify-content:center;overflow:auto;padding:10px 0;
+    }
+    #sullamStair{
+      display:flex;flex-direction:column;gap:5px;align-items:flex-start;
+    }
+    .sullamRow{
+      display:flex;gap:4px;
+    }
+    .sullamCell{
+      width:54px;height:46px;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:1000;font-size:16px;
+      background:#ece8cf;color:#111827;
+      border:1px solid rgba(255,255,255,.18);
+      user-select:none;cursor:pointer;
+    }
+    .sullamCell.done{
+      background:#b9ecb0;
+    }
+    .sullamCell.current{
+      background:#f3d58b;
+    }
+    .sullamCell.selected{
+      outline:3px solid #22c55e;
+      outline-offset:-3px;
+    }
+    .sullamBtns{
+      display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:24px;
+    }
+    .roundAction{
+      width:96px;height:96px;border:none;border-radius:999px;
+      font-size:34px;font-weight:1000;color:#fff;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      box-shadow:0 14px 26px rgba(0,0,0,.28);
+    }
+    .roundAction span{
+      font-size:13px;margin-top:4px;font-weight:800;
+    }
+    .redBtn{background:#ef4444;}
+    .greenBtn{background:#22c55e;}
+    .orangeBtn{background:#f59e0b;}
+    .teacherOption{
+      padding:12px;border-bottom:1px solid #e5e7eb;cursor:pointer;font-weight:800;
+    }
+    .teacherOption:hover{
+      background:#f8fafc;
+    }
   </style>
 </head>
 <body>
@@ -154,8 +222,38 @@
     </div>
 
     <div id="viewSubmit" class="card hidden">
-      <div class="cardHead"><h3>Submit</h3><small>Teachers auto-approve</small></div>
+      <div class="cardHead"><h3>Submit</h3><small>Requests / direct teacher approval</small></div>
       <div class="cardBody" id="submitBody"></div>
+    </div>
+
+    <div id="viewSullam" class="card hidden">
+      <div class="cardHead">
+        <h3>Sullam</h3>
+        <small>Actual step ladder</small>
+      </div>
+      <div class="cardBody">
+        <div class="sullamShell">
+          <div class="sullamHeader">
+            <div class="sullamTitle" id="sullamTitle">سورة نوح</div>
+            <div class="sullamSub">Ayahs: 3 - 4</div>
+          </div>
+
+          <div class="sullamTopStats">
+            <div class="sStat">Approved: <span id="approvedStepLabel">0</span>/55</div>
+            <div class="sStat">Selected: <span id="targetStepLabel">1</span>/55</div>
+          </div>
+
+          <div class="stairWrap">
+            <div id="sullamStair"></div>
+          </div>
+
+          <div class="sullamBtns">
+            <button id="btnStepBack" class="roundAction redBtn">←<span>-1 step</span></button>
+            <button id="btnStepConfirm" class="roundAction greenBtn">✓<span>Confirm</span></button>
+            <button id="btnStepSkip" class="roundAction orangeBtn">→<span>Skip to step</span></button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="viewTeacher" class="card hidden">
@@ -164,12 +262,12 @@
     </div>
 
     <div id="viewAdmin" class="card hidden">
-      <div class="cardHead"><h3>Admin</h3><small>Leaderboard window</small></div>
+      <div class="cardHead"><h3>Admin</h3><small>Leaderboard settings</small></div>
       <div class="cardBody" id="adminBody"></div>
     </div>
   </div>
 
-  <button class="fab" id="fab" title="New Request">+</button>
+  <button class="fab" id="fab" title="Open Submit">+</button>
 
   <div class="modalBack" id="modalBack">
     <div class="modal">
@@ -191,10 +289,13 @@
     let profile = null;
     let settings = null;
     let activeTab = "home";
+    let approvedStep = 0;
+    let targetStep = 1;
 
     const TABS = [
       { key:"home", label:"Home", guard:"any" },
       { key:"submit", label:"Submit", guard:"any" },
+      { key:"sullam", label:"Sullam", guard:"any" },
       { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
       { key:"admin", label:"Admin", guard:"admin" }
     ];
@@ -259,11 +360,12 @@
     }
 
     function showView(){
-      const ids = ["viewHome","viewSubmit","viewTeacher","viewAdmin"];
+      const ids = ["viewHome","viewSubmit","viewSullam","viewTeacher","viewAdmin"];
       ids.forEach(id => document.getElementById(id).classList.add("hidden"));
       const map = {
         home:"viewHome",
         submit:"viewSubmit",
+        sullam:"viewSullam",
         teacher:"viewTeacher",
         admin:"viewAdmin"
       };
@@ -283,16 +385,20 @@
         .from("profiles")
         .select("id, display_name, role")
         .eq("id", me.id)
-        .single();
+        .maybeSingle();
 
-      if(error || !data){
+      if(error){
+        console.error("profiles read error", error);
+      }
+
+      if(data){
+        profile = data;
+      } else {
         profile = {
           id: me.id,
           display_name: me.user_metadata?.display_name || me.email || "User",
           role: "student"
         };
-      } else {
-        profile = data;
       }
     }
 
@@ -301,8 +407,12 @@
         .from("app_settings")
         .select("*")
         .eq("id", true)
-        .single();
-      settings = data || null;
+        .maybeSingle();
+      settings = data || {
+        leaderboard_enabled: false,
+        leaderboard_start_at: null,
+        leaderboard_end_at: null
+      };
     }
 
     function leaderboardOpenNow(){
@@ -387,6 +497,7 @@
       closeModal();
       await loadMe();
       await loadSettings();
+      await loadApprovedStep();
       await renderAll();
     }
 
@@ -399,6 +510,8 @@
       me = null;
       profile = null;
       activeTab = "home";
+      approvedStep = 0;
+      targetStep = 1;
       await renderAll();
     }
 
@@ -496,7 +609,6 @@
             <select id="subType">
               <option value="qadeem">Qadeem</option>
               <option value="jadeed">Jadeed</option>
-              <option value="sullam">Sullam</option>
             </select>
           </div>
           <div class="formRow">
@@ -544,16 +656,20 @@
         return;
       }
 
+      const payload = {
+        user_id: me.id,
+        type,
+        pages,
+        with_teacher,
+        teacher_name,
+        note
+      };
+
       const autoApprove = profile.role === "teacher" || profile.role === "admin";
 
       if(autoApprove){
         const { error } = await sb.from("records").insert({
-          user_id: me.id,
-          type,
-          pages,
-          with_teacher,
-          teacher_name,
-          note,
+          ...payload,
           confirmed_by: me.id
         });
         if(error){
@@ -563,12 +679,7 @@
         alert("Saved directly as approved ✅");
       } else {
         const { error } = await sb.from("requests").insert({
-          user_id: me.id,
-          type,
-          pages,
-          with_teacher,
-          teacher_name,
-          note,
+          ...payload,
           status: "pending"
         });
         if(error){
@@ -578,6 +689,192 @@
         alert("Sent to Teacher Zone ✅");
       }
 
+      await renderAll();
+    }
+
+    function buildSullamRows() {
+      return [
+        [55],
+        [54,53],
+        [50,51,52],
+        [49,48,47,46],
+        [41,42,43,44,45],
+        [40,39,38,37,36,35],
+        [28,29,30,31,32,33,34],
+        [27,26,25,24,23,22,21,20],
+        [11,12,13,14,15,16,17,18,19],
+        [10,9,8,7,6,5,4,3,2,1]
+      ];
+    }
+
+    function renderSullam() {
+      const box = document.getElementById("sullamStair");
+      if (!box) return;
+
+      box.innerHTML = "";
+      const rows = buildSullamRows();
+
+      rows.forEach(rowArr => {
+        const row = document.createElement("div");
+        row.className = "sullamRow";
+
+        rowArr.forEach(num => {
+          const cell = document.createElement("div");
+          cell.className = "sullamCell";
+          cell.textContent = num;
+
+          if (num <= approvedStep) cell.classList.add("done");
+          if (num === approvedStep + 1) cell.classList.add("current");
+          if (num === targetStep) cell.classList.add("selected");
+
+          cell.addEventListener("click", () => {
+            targetStep = num;
+            renderSullam();
+          });
+
+          row.appendChild(cell);
+        });
+
+        box.appendChild(row);
+      });
+
+      document.getElementById("approvedStepLabel").textContent = approvedStep;
+      document.getElementById("targetStepLabel").textContent = targetStep;
+    }
+
+    async function loadApprovedStep(){
+      if(!me){
+        approvedStep = 0;
+        targetStep = 1;
+        return;
+      }
+
+      const { data, error } = await sb
+        .from("records")
+        .select("step_to")
+        .eq("user_id", me.id)
+        .eq("type", "sullam")
+        .order("step_to", { ascending:false })
+        .limit(1);
+
+      if(error || !data || !data.length){
+        approvedStep = 0;
+      } else {
+        approvedStep = Number(data[0].step_to || 0);
+      }
+
+      targetStep = Math.min(55, Math.max(1, approvedStep + 1));
+    }
+
+    async function openTeacherPickerForSullam() {
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id, display_name, role")
+        .eq("role", "teacher");
+
+      if (error) {
+        alert(error.message);
+        return null;
+      }
+
+      const teachers = data || [];
+      if (!teachers.length) {
+        alert("No teachers found.");
+        return null;
+      }
+
+      return new Promise((resolve) => {
+        openModal("Select Teacher", `
+          <input id="teacherSearch" placeholder="Search teacher name..." style="margin-bottom:12px;" />
+          <div id="teacherListBox" style="max-height:300px;overflow:auto;border:1px solid #e5e7eb;border-radius:12px;"></div>
+        `);
+
+        const listBox = document.getElementById("teacherListBox");
+        const search = document.getElementById("teacherSearch");
+
+        function draw(list) {
+          listBox.innerHTML = list.map(t => `
+            <div class="teacherOption" data-id="${t.id}" data-name="${escapeHtml(t.display_name || "Teacher")}">
+              ${escapeHtml(t.display_name || "Teacher")}
+            </div>
+          `).join("");
+
+          [...listBox.querySelectorAll(".teacherOption")].forEach(el => {
+            el.addEventListener("click", () => {
+              const teacher = {
+                id: el.getAttribute("data-id"),
+                name: el.getAttribute("data-name")
+              };
+              closeModal();
+              resolve(teacher);
+            });
+          });
+        }
+
+        draw(teachers);
+
+        search.addEventListener("input", () => {
+          const q = search.value.trim().toLowerCase();
+          draw(teachers.filter(t => (t.display_name || "").toLowerCase().includes(q)));
+        });
+      });
+    }
+
+    async function confirmSullamStep() {
+      if (!me || !profile) {
+        alert("Please sign in first.");
+        return;
+      }
+
+      if (targetStep <= approvedStep) {
+        alert("Choose a higher step.");
+        return;
+      }
+
+      const teacher = await openTeacherPickerForSullam();
+      if (!teacher) return;
+
+      const payload = {
+        user_id: me.id,
+        type: "sullam",
+        pages: targetStep - approvedStep,
+        with_teacher: true,
+        teacher_name: teacher.name,
+        step_from: approvedStep,
+        step_to: targetStep,
+        note: ""
+      };
+
+      const autoApprove = profile.role === "teacher" || profile.role === "admin";
+
+      if(autoApprove){
+        const { error } = await sb.from("records").insert({
+          ...payload,
+          confirmed_by: me.id
+        });
+
+        if(error){
+          alert(error.message);
+          return;
+        }
+
+        approvedStep = targetStep;
+        alert("Sullam approved directly ✅");
+      } else {
+        const { error } = await sb.from("requests").insert({
+          ...payload,
+          status: "pending"
+        });
+
+        if(error){
+          alert(error.message);
+          return;
+        }
+
+        alert("Sullam sent to teacher ✅");
+      }
+
+      renderSullam();
       await renderAll();
     }
 
@@ -609,7 +906,12 @@
         <div class="row">
           <div>
             <strong>${escapeHtml(r.type)}</strong>
-            <div class="meta">${Number(r.pages || 0)} pages • ${r.with_teacher ? "with teacher" : "solo"} • ${escapeHtml(r.teacher_name || "—")}</div>
+            <div class="meta">
+              ${Number(r.pages || 0)} pages
+              ${r.type === "sullam" ? ` • steps ${r.step_from} → ${r.step_to}` : ""}
+              • ${r.with_teacher ? "with teacher" : "solo"}
+              • ${escapeHtml(r.teacher_name || "—")}
+            </div>
           </div>
           <div class="right">
             <button class="btn approve-btn" data-id="${r.id}">Approve</button>
@@ -635,6 +937,8 @@
         pages: r.pages,
         with_teacher: r.with_teacher,
         teacher_name: r.teacher_name,
+        step_from: r.step_from,
+        step_to: r.step_to,
         note: r.note,
         confirmed_by: me.id
       });
@@ -654,6 +958,7 @@
       }
 
       alert("Approved ✅");
+      await loadApprovedStep();
       await renderAll();
     }
 
@@ -735,6 +1040,7 @@
       showView();
       await renderHome();
       if(activeTab === "submit") await renderSubmit();
+      if(activeTab === "sullam") renderSullam();
       if(activeTab === "teacher") await renderTeacher();
       if(activeTab === "admin") await renderAdmin();
     }
@@ -750,15 +1056,36 @@
       if(e.target.id === "modalBack") closeModal();
     });
 
+    document.getElementById("btnStepBack").addEventListener("click", () => {
+      targetStep = Math.max(1, targetStep - 1);
+      renderSullam();
+    });
+
+    document.getElementById("btnStepConfirm").addEventListener("click", confirmSullamStep);
+
+    document.getElementById("btnStepSkip").addEventListener("click", () => {
+      const v = prompt("Skip to step (1-55):", String(targetStep));
+      if (v === null) return;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 1 || n > 55) {
+        alert("Enter a number from 1 to 55.");
+        return;
+      }
+      targetStep = n;
+      renderSullam();
+    });
+
     (async () => {
       await loadMe();
       await loadSettings();
+      await loadApprovedStep();
       await renderAll();
 
       sb.auth.onAuthStateChange(async (_event, session) => {
         me = session?.user || null;
         await loadMe();
         await loadSettings();
+        await loadApprovedStep();
         activeTab = "home";
         await renderAll();
       });
