@@ -288,11 +288,10 @@
       { key:"admin", label:"Admin", guard:"admin" }
     ];
 
-    const MY_QURAN_TABS = [
-      { key:"jadeed", label:"New (Jadeed)" },
-      { key:"qadeem", label:"Old (Qadeem)" },
-      { key:"sullam", label:"Sullam" }
-    ];
+const MY_QURAN_TABS = [
+  { key:"jadeed", label:"New (Jadeed)" },
+  { key:"qadeem", label:"Old (Qadeem)" }
+];
 
     function escapeHtml(s){
       return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -587,21 +586,16 @@
       document.getElementById("jadeedMeta").textContent = "Live";
     }
 
-    function renderMyQuranTabs(){
-      const el = document.getElementById("myQuranTabs");
-      el.innerHTML = "";
-      for(const t of MY_QURAN_TABS){
-        const b = document.createElement("button");
-        b.className = "subTab" + (myQuranTab === t.key ? " active" : "");
-        b.textContent = t.label;
-        b.addEventListener("click", () => {
-          myQuranTab = t.key;
-          renderMyQuranBody();
-        });
-        el.appendChild(b);
-      }
-    }
+async function renderMyQuranBody(){
+  renderMyQuranTabs();
 
+  if(myQuranTab === "jadeed"){
+    document.getElementById("myQuranBody").innerHTML = renderJadeedForm();
+    document.getElementById("saveJadeedBtn").addEventListener("click", () => saveMemorization("jadeed"));
+  } else if(myQuranTab === "qadeem"){
+    document.getElementById("myQuranBody").innerHTML = await renderQadeemToday();
+  }
+}
     async function saveMemorization(type){
       if(!me || !profile) return;
 
