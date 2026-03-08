@@ -515,15 +515,16 @@
     }
 
     async function fetchLeaderboard(){
-      if(!leaderboardOpenNow()) return [];
 
-      const { data } = await sb
-        .from("current_sullam_progress")
-        .select("*")
-        .order("approved_step", { ascending:false });
+  if(!leaderboardOpenNow()) return [];
 
-      return data || [];
-    }
+  const { data } = await sb
+    .from("leaderboard_points")
+    .select("*")
+    .order("total_points", { ascending:false });
+
+  return data || [];
+}
 
     async function renderHome(){
       document.getElementById("homeLeft").innerHTML = me
@@ -539,8 +540,9 @@
         return;
       }
 
-      document.getElementById("totalMeta").textContent = `${rows.length} students`;
-
+      const totalPagesAll = rows.reduce((a, x) => a + Number(x.total_pages || 0), 0);
+      document.getElementById("totalMeta").textContent = `${totalPagesAll} pages memorized`;
+      
       const podium = document.getElementById("podium");
       podium.innerHTML = "";
       const top3 = rows.slice(0,3);
@@ -553,7 +555,8 @@
         el.innerHTML = item ? `
           <div class="rank">#${p.slot}</div>
           <h4 style="margin:6px 0 4px 0;">${escapeHtml(item.display_student_name)}</h4>
-          <div style="font-weight:1000;font-size:18px;">Step ${Math.round(Number(item.approved_step||0))}</div>
+          <div style="font-weight:1000;font-size:18px;">${Math.round(Number(item.total_points||0))} pts</div>
+          <div class="meta">${Math.round(Number(item.total_pages||0))} pages</div>
         ` : `
           <div class="rank">#${p.slot}</div>
           <h4>—</h4>
@@ -566,9 +569,9 @@
         <div class="row">
           <div>
             <strong>#${i+1} ${escapeHtml(x.display_student_name)}</strong>
-            <div class="meta">Approved step ${Math.round(Number(x.approved_step||0))}</div>
+            <div class="meta">${Math.round(Number(x.total_pages||0))} pages • ${Math.round(Number(x.total_points||0))} pts</div>
           </div>
-          <div class="right"><strong>${Math.round(Number(x.approved_step||0))}</strong></div>
+          <div class="right"><strong>${Math.round(Number(x.total_points||0))}</strong></div>
         </div>
       `).join("") || `<div class="meta">No data yet.</div>`;
     }
@@ -582,7 +585,7 @@
 
       if(selfRoster){
         const { data } = await sb
-          .from("current_sullam_progress")
+          .from("leaderboard_points")
           .select("*")
           .eq("student_roster_id", selfRoster.id)
           .limit(1);
@@ -590,7 +593,7 @@
         approvedStep = data && data.length ? Number(data[0].approved_step || 0) : 0;
       } else {
         const { data } = await sb
-          .from("current_sullam_progress")
+          .from("leaderboard_points")
           .select("*")
           .eq("user_id", me.id)
           .limit(1);
