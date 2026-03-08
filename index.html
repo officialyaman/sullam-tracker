@@ -164,7 +164,7 @@
     </div>
 
     <div id="viewAdmin" class="card hidden">
-      <div class="cardHead"><h3>Admin</h3><small>Leaderboard window + roles</small></div>
+      <div class="cardHead"><h3>Admin</h3><small>Leaderboard window</small></div>
       <div class="cardBody" id="adminBody"></div>
     </div>
   </div>
@@ -185,11 +185,11 @@
   <script>
     const SUPABASE_URL = "https://amudgjmpknarglyefgxk.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWRnam1wa25hcmdseWVmZ3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODI1MzEsImV4cCI6MjA4ODE1ODUzMX0.nBHxEAMhVnmxssgSpsOa_ZUO8DuX8w0Oiz8FEu0QAW8";
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
     let me = null;
     let profile = null;
-    let appSettings = null;
+    let settings = null;
     let activeTab = "home";
 
     const TABS = [
@@ -205,14 +205,6 @@
       }[c]));
     }
 
-    function canSee(guard){
-      if (guard === "any") return true;
-      const r = profile?.role || "guest";
-      if (guard === "admin") return r === "admin";
-      if (guard === "teacher_or_admin") return r === "teacher" || r === "admin";
-      return false;
-    }
-
     function openModal(title, html){
       document.getElementById("modalTitle").textContent = title;
       document.getElementById("modalBody").innerHTML = html;
@@ -224,22 +216,19 @@
       document.getElementById("modalBody").innerHTML = "";
     }
 
-function setWho(){
-  const name = profile?.display_name || me?.email || "Logged out";
-  const role = profile?.role || (me ? "student" : "guest");
+    function canSee(guard){
+      if(guard === "any") return true;
+      const r = profile?.role || "guest";
+      if(guard === "admin") return r === "admin";
+      if(guard === "teacher_or_admin") return r === "teacher" || r === "admin";
+      return false;
+    }
 
-  document.getElementById("whoName").textContent = name;
+    function setWho(){
+      const name = profile?.display_name || me?.email || "Logged out";
+      const role = profile?.role || (me ? "student" : "guest");
 
-  const roleEl = document.getElementById("whoRole");
-  roleEl.textContent = role;
-  roleEl.className = "badge" + (
-    role === "admin" ? " ok" :
-    role === "teacher" ? " warn" : ""
-  );
-
-  document.getElementById("btnAuth").classList.toggle("hidden", !!me);
-  document.getElementById("btnLogout").classList.toggle("hidden", !me);
-}
+      document.getElementById("whoName").textContent = name;
 
       const roleEl = document.getElementById("whoRole");
       roleEl.textContent = role;
@@ -261,10 +250,10 @@ function setWho(){
         const b = document.createElement("button");
         b.className = "tab" + (activeTab === t.key ? " active" : "");
         b.textContent = t.label;
-        b.onclick = () => {
+        b.addEventListener("click", () => {
           activeTab = t.key;
           renderAll();
-        };
+        });
         el.appendChild(b);
       }
     }
@@ -272,70 +261,61 @@ function setWho(){
     function showView(){
       const ids = ["viewHome","viewSubmit","viewTeacher","viewAdmin"];
       ids.forEach(id => document.getElementById(id).classList.add("hidden"));
-
       const map = {
-        home: "viewHome",
-        submit: "viewSubmit",
-        teacher: "viewTeacher",
-        admin: "viewAdmin"
+        home:"viewHome",
+        submit:"viewSubmit",
+        teacher:"viewTeacher",
+        admin:"viewAdmin"
       };
       document.getElementById(map[activeTab]).classList.remove("hidden");
     }
 
-async function refreshMe(){
-  const { data: { user } } = await client.auth.getUser();
-  me = user || null;
+    async function loadMe(){
+      const { data: { user } } = await sb.auth.getUser();
+      me = user || null;
 
-  if(!me){
-    profile = null;
-    return;
-  }
+      if(!me){
+        profile = null;
+        return;
+      }
 
-  const { data, error } = await client
-    .from("profiles")
-    .select("id, display_name, role")
-    .eq("id", me.id)
-    .single();
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id, display_name, role")
+        .eq("id", me.id)
+        .single();
 
-  console.log("PROFILE QUERY:", { data, error });
+      if(error || !data){
+        profile = {
+          id: me.id,
+          display_name: me.user_metadata?.display_name || me.email || "User",
+          role: "student"
+        };
+      } else {
+        profile = data;
+      }
+    }
 
-  if (error) {
-    alert("Profile read failed: " + error.message);
-  }
-
-  if(error || !data){
-    profile = {
-      id: me.id,
-      display_name: me.user_metadata?.display_name || me.email || "User",
-      role: "student"
-    };
-  } else {
-    profile = data;
-  }
-}
-    
     async function loadSettings(){
-      const { data } = await client
+      const { data } = await sb
         .from("app_settings")
         .select("*")
         .eq("id", true)
         .single();
-      appSettings = data || null;
+      settings = data || null;
     }
 
-    function leaderboardIsOpen(){
-      if(!appSettings?.leaderboard_enabled) return false;
-
+    function leaderboardOpenNow(){
+      if(!settings?.leaderboard_enabled) return false;
       const now = new Date();
-      const start = appSettings.leaderboard_start_at ? new Date(appSettings.leaderboard_start_at) : null;
-      const end = appSettings.leaderboard_end_at ? new Date(appSettings.leaderboard_end_at) : null;
-
+      const start = settings?.leaderboard_start_at ? new Date(settings.leaderboard_start_at) : null;
+      const end = settings?.leaderboard_end_at ? new Date(settings.leaderboard_end_at) : null;
       if(start && now < start) return false;
       if(end && now > end) return false;
       return true;
     }
 
-    function openAuthModal(){
+    async function openAuth(){
       openModal("Sign up / Sign in", `
         <div class="twoCol">
           <div class="formRow">
@@ -347,7 +327,6 @@ async function refreshMe(){
             <input id="authEmail" type="email" placeholder="email@example.com" />
           </div>
         </div>
-
         <div class="twoCol">
           <div class="formRow">
             <label>Password</label>
@@ -361,42 +340,58 @@ async function refreshMe(){
             </select>
           </div>
         </div>
-
-        <button class="btn" style="width:100%;" onclick="doAuth()">Continue</button>
+        <button class="btn" id="authContinueBtn" style="width:100%;">Continue</button>
       `);
+
+      document.getElementById("authContinueBtn").addEventListener("click", doAuth);
     }
 
     async function doAuth(){
       const name = document.getElementById("authName").value.trim();
       const email = document.getElementById("authEmail").value.trim();
-      const pass = document.getElementById("authPass").value;
+      const password = document.getElementById("authPass").value;
       const mode = document.getElementById("authMode").value;
 
-      if(!email || !pass) return alert("Email + password required.");
-      if(mode === "signup" && !name) return alert("Display name required.");
+      if(!email || !password){
+        alert("Email + password required.");
+        return;
+      }
 
       if(mode === "signup"){
-        const { error } = await client.auth.signUp({
+        if(!name){
+          alert("Display name required.");
+          return;
+        }
+
+        const { error } = await sb.auth.signUp({
           email,
-          password: pass,
+          password,
           options: { data: { display_name: name } }
         });
-        if(error) return alert(error.message);
+
+        if(error){
+          alert(error.message);
+          return;
+        }
+
         alert("Signed up ✅ Now sign in.");
         return;
-      } else {
-        const { error } = await client.auth.signInWithPassword({ email, password: pass });
-        if(error) return alert(error.message);
+      }
+
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error){
+        alert(error.message);
+        return;
       }
 
       closeModal();
-      await refreshMe();
+      await loadMe();
       await loadSettings();
       await renderAll();
     }
 
-    async function logout(){
-      const { error } = await client.auth.signOut();
+    async function doLogout(){
+      const { error } = await sb.auth.signOut();
       if(error){
         alert(error.message);
         return;
@@ -407,42 +402,43 @@ async function refreshMe(){
       await renderAll();
     }
 
-    async function fetchLeaderboardRows(){
-      if(!leaderboardIsOpen()) return [];
-      const { data } = await client.from("leaderboard_points").select("*");
-      const rows = data || [];
-      const ids = rows.map(r => r.user_id);
+    async function fetchLeaderboard(){
+      if(!leaderboardOpenNow()) return [];
+
+      const { data: rows } = await sb.from("leaderboard_points").select("*");
+      const all = rows || [];
+      const ids = all.map(x => x.user_id);
 
       let nameMap = new Map();
       if(ids.length){
-        const { data: profs } = await client.from("profiles").select("id,display_name").in("id", ids);
+        const { data: profs } = await sb.from("profiles").select("id,display_name").in("id", ids);
         if(profs) nameMap = new Map(profs.map(p => [p.id, p.display_name]));
       }
 
-      return rows.map(r => ({
-        ...r,
-        name: nameMap.get(r.user_id) || "User"
+      return all.map(x => ({
+        ...x,
+        name: nameMap.get(x.user_id) || "User"
       }));
     }
 
     function renderPointsList(list, field){
       if(!list.length) return `<div class="meta">No data yet.</div>`;
-      const sorted = [...list].sort((a,b) => Number(b[field] || 0) - Number(a[field] || 0));
-      return sorted.slice(0, 10).map((x, i) => `
+      const sorted = [...list].sort((a,b)=>Number(b[field]||0)-Number(a[field]||0));
+      return sorted.slice(0,10).map((x,i)=>`
         <div class="row">
           <div>
             <strong>#${i+1} ${escapeHtml(x.name)}</strong>
-            <div class="meta">${Math.round(Number(x[field] || 0))} points</div>
+            <div class="meta">${Math.round(Number(x[field]||0))} points</div>
           </div>
-          <div class="right"><strong>${Math.round(Number(x[field] || 0))}</strong></div>
+          <div class="right"><strong>${Math.round(Number(x[field]||0))}</strong></div>
         </div>
       `).join("");
     }
 
     async function renderHome(){
-      const rows = await fetchLeaderboardRows();
+      const rows = await fetchLeaderboard();
 
-      if(!leaderboardIsOpen()){
+      if(!leaderboardOpenNow()){
         document.getElementById("totalMeta").textContent = "Hidden right now";
         document.getElementById("podium").innerHTML = "";
         document.getElementById("totalList").innerHTML = `<div class="notice">Leaderboard is off or outside the active date/time window.</div>`;
@@ -453,22 +449,22 @@ async function refreshMe(){
         return;
       }
 
-      rows.sort((a,b) => Number(b.total_points || 0) - Number(a.total_points || 0));
+      rows.sort((a,b)=>Number(b.total_points||0)-Number(a.total_points||0));
       document.getElementById("totalMeta").textContent = `${rows.length} users`;
 
       const podium = document.getElementById("podium");
       podium.innerHTML = "";
       const top3 = rows.slice(0,3);
-      const podiumOrder = [{slot:2, cls:"silver"},{slot:1, cls:"gold"},{slot:3, cls:"bronze"}];
+      const order = [{slot:2, cls:"silver"},{slot:1, cls:"gold"},{slot:3, cls:"bronze"}];
 
-      for(const p of podiumOrder){
+      for(const p of order){
         const item = top3[p.slot-1];
         const el = document.createElement("div");
         el.className = `podiumCard ${p.cls}`;
         el.innerHTML = item ? `
           <div class="rank">#${p.slot}</div>
           <h4 style="margin:6px 0 4px 0;">${escapeHtml(item.name)}</h4>
-          <div style="font-weight:1000;font-size:18px;">${Math.round(Number(item.total_points || 0))}</div>
+          <div style="font-weight:1000;font-size:18px;">${Math.round(Number(item.total_points||0))}</div>
           <div class="meta">points</div>
         ` : `
           <div class="rank">#${p.slot}</div>
@@ -528,8 +524,10 @@ async function refreshMe(){
           <textarea id="subNote"></textarea>
         </div>
 
-        <button class="btn" onclick="submitRecord()">Submit</button>
+        <button class="btn" id="submitRecordBtn">Submit</button>
       `;
+
+      document.getElementById("submitRecordBtn").addEventListener("click", submitRecord);
     }
 
     async function submitRecord(){
@@ -541,12 +539,15 @@ async function refreshMe(){
       const teacher_name = document.getElementById("subTeacherName").value.trim();
       const note = document.getElementById("subNote").value.trim();
 
-      if(pages <= 0) return alert("Pages must be more than 0.");
+      if(pages <= 0){
+        alert("Pages must be more than 0.");
+        return;
+      }
 
-      const isTeacher = profile.role === "teacher" || profile.role === "admin";
+      const autoApprove = profile.role === "teacher" || profile.role === "admin";
 
-      if(isTeacher){
-        const { error } = await client.from("records").insert({
+      if(autoApprove){
+        const { error } = await sb.from("records").insert({
           user_id: me.id,
           type,
           pages,
@@ -555,10 +556,13 @@ async function refreshMe(){
           note,
           confirmed_by: me.id
         });
-        if(error) return alert(error.message);
+        if(error){
+          alert(error.message);
+          return;
+        }
         alert("Saved directly as approved ✅");
       } else {
-        const { error } = await client.from("requests").insert({
+        const { error } = await sb.from("requests").insert({
           user_id: me.id,
           type,
           pages,
@@ -567,7 +571,10 @@ async function refreshMe(){
           note,
           status: "pending"
         });
-        if(error) return alert(error.message);
+        if(error){
+          alert(error.message);
+          return;
+        }
         alert("Sent to Teacher Zone ✅");
       }
 
@@ -581,7 +588,7 @@ async function refreshMe(){
         return;
       }
 
-      const { data, error } = await client
+      const { data, error } = await sb
         .from("requests")
         .select("*")
         .eq("status","pending")
@@ -605,17 +612,24 @@ async function refreshMe(){
             <div class="meta">${Number(r.pages || 0)} pages • ${r.with_teacher ? "with teacher" : "solo"} • ${escapeHtml(r.teacher_name || "—")}</div>
           </div>
           <div class="right">
-            <button class="btn" onclick="approveReq('${r.id}')">Approve</button>
+            <button class="btn approve-btn" data-id="${r.id}">Approve</button>
           </div>
         </div>
       `).join("");
+
+      [...body.querySelectorAll(".approve-btn")].forEach(btn => {
+        btn.addEventListener("click", () => approveReq(btn.dataset.id));
+      });
     }
 
     async function approveReq(id){
-      const { data: r, error } = await client.from("requests").select("*").eq("id", id).single();
-      if(error) return alert(error.message);
+      const { data: r, error } = await sb.from("requests").select("*").eq("id", id).single();
+      if(error){
+        alert(error.message);
+        return;
+      }
 
-      const { error: e1 } = await client.from("records").insert({
+      const { error: e1 } = await sb.from("records").insert({
         user_id: r.user_id,
         type: r.type,
         pages: r.pages,
@@ -624,14 +638,20 @@ async function refreshMe(){
         note: r.note,
         confirmed_by: me.id
       });
-      if(e1) return alert(e1.message);
+      if(e1){
+        alert(e1.message);
+        return;
+      }
 
-      const { error: e2 } = await client.from("requests").update({
+      const { error: e2 } = await sb.from("requests").update({
         status: "approved",
         handled_by: me.id,
         handled_at: new Date().toISOString()
       }).eq("id", id);
-      if(e2) return alert(e2.message);
+      if(e2){
+        alert(e2.message);
+        return;
+      }
 
       alert("Approved ✅");
       await renderAll();
@@ -659,45 +679,50 @@ async function refreshMe(){
           <div class="formRow">
             <label>Leaderboard enabled?</label>
             <select id="lbEnabled">
-              <option value="false" ${!appSettings?.leaderboard_enabled ? "selected" : ""}>No</option>
-              <option value="true" ${appSettings?.leaderboard_enabled ? "selected" : ""}>Yes</option>
+              <option value="false" ${!settings?.leaderboard_enabled ? "selected" : ""}>No</option>
+              <option value="true" ${settings?.leaderboard_enabled ? "selected" : ""}>Yes</option>
             </select>
           </div>
           <div class="formRow">
             <label>Start</label>
-            <input id="lbStart" type="datetime-local" value="${toDatetimeLocalValue(appSettings?.leaderboard_start_at)}" />
+            <input id="lbStart" type="datetime-local" value="${toDatetimeLocalValue(settings?.leaderboard_start_at)}" />
           </div>
         </div>
 
         <div class="twoCol">
           <div class="formRow">
             <label>End</label>
-            <input id="lbEnd" type="datetime-local" value="${toDatetimeLocalValue(appSettings?.leaderboard_end_at)}" />
+            <input id="lbEnd" type="datetime-local" value="${toDatetimeLocalValue(settings?.leaderboard_end_at)}" />
           </div>
           <div class="formRow">
             <label>&nbsp;</label>
-            <button class="btn" style="width:100%;" onclick="saveAdminSettings()">Save Settings</button>
+            <button class="btn" id="saveAdminBtn" style="width:100%;">Save Settings</button>
           </div>
         </div>
       `;
+
+      document.getElementById("saveAdminBtn").addEventListener("click", saveAdminSettings);
     }
 
     async function saveAdminSettings(){
       const leaderboard_enabled = document.getElementById("lbEnabled").value === "true";
-      const leaderboard_start_at = document.getElementById("lbStart").value || null;
-      const leaderboard_end_at = document.getElementById("lbEnd").value || null;
+      const startVal = document.getElementById("lbStart").value || null;
+      const endVal = document.getElementById("lbEnd").value || null;
 
-      const { error } = await client
+      const { error } = await sb
         .from("app_settings")
         .update({
           leaderboard_enabled,
-          leaderboard_start_at: leaderboard_start_at ? new Date(leaderboard_start_at).toISOString() : null,
-          leaderboard_end_at: leaderboard_end_at ? new Date(leaderboard_end_at).toISOString() : null,
+          leaderboard_start_at: startVal ? new Date(startVal).toISOString() : null,
+          leaderboard_end_at: endVal ? new Date(endVal).toISOString() : null,
           updated_at: new Date().toISOString()
         })
         .eq("id", true);
 
-      if(error) return alert(error.message);
+      if(error){
+        alert(error.message);
+        return;
+      }
 
       alert("Settings saved ✅");
       await loadSettings();
@@ -714,8 +739,8 @@ async function refreshMe(){
       if(activeTab === "admin") await renderAdmin();
     }
 
-    document.getElementById("btnAuth").addEventListener("click", openAuthModal);
-    document.getElementById("btnLogout").addEventListener("click", logout);
+    document.getElementById("btnAuth").addEventListener("click", openAuth);
+    document.getElementById("btnLogout").addEventListener("click", doLogout);
     document.getElementById("fab").addEventListener("click", () => {
       activeTab = "submit";
       renderAll();
@@ -725,19 +750,14 @@ async function refreshMe(){
       if(e.target.id === "modalBack") closeModal();
     });
 
-    window.doAuth = doAuth;
-    window.submitRecord = submitRecord;
-    window.approveReq = approveReq;
-    window.saveAdminSettings = saveAdminSettings;
-
     (async () => {
-      await refreshMe();
+      await loadMe();
       await loadSettings();
       await renderAll();
 
-      client.auth.onAuthStateChange(async (_event, session) => {
+      sb.auth.onAuthStateChange(async (_event, session) => {
         me = session?.user || null;
-        await refreshMe();
+        await loadMe();
         await loadSettings();
         activeTab = "home";
         await renderAll();
