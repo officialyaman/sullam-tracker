@@ -283,12 +283,13 @@
 
     const CHECKPOINT_STEPS = new Set([11,22,33,44,50,51,52,53,54,55]);
 
-    const TABS = [
-      { key:"home", label:"Home", guard:"any" },
-      { key:"myquran", label:"My Quran", guard:"any" },
-      { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
-      { key:"admin", label:"Admin", guard:"admin" }
-    ];
+const TABS = [
+  { key:"home", label:"Home", guard:"any" },
+  { key:"leaderboard", label:"Leaderboard", guard:"any" },
+  { key:"myquran", label:"My Quran", guard:"any" },
+  { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
+  { key:"admin", label:"Admin", guard:"admin" }
+];
 
     function escapeHtml(s){
       return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -351,14 +352,25 @@
     function showView(){
       const ids = ["viewHome","viewMyQuran","viewTeacher","viewAdmin"];
       ids.forEach(id => document.getElementById(id).classList.add("hidden"));
-      const map = {
-        home:"viewHome",
-        myquran:"viewMyQuran",
-        teacher:"viewTeacher",
-        admin:"viewAdmin"
-      };
+const map = {
+  home:"viewHome",
+  leaderboard:"viewLeaderboard",
+  myquran:"viewMyQuran",
+  teacher:"viewTeacher",
+  admin:"viewAdmin"
+};
       document.getElementById(map[activeTab]).classList.remove("hidden");
     }
+    <div id="viewLeaderboard" class="card hidden">
+  <div class="leaderHeader">
+    <div style="font-size:18px;">Sullam Leaderboard</div>
+    <div class="sub" id="leaderMeta">—</div>
+  </div>
+
+  <div class="podium" id="leaderPodium"></div>
+
+  <div class="cardBody" id="leaderList"></div>
+</div>
 
     async function loadMe(){
       const { data: { user } } = await sb.auth.getUser();
@@ -498,6 +510,64 @@
       await bootData();
       await renderAll();
     }
+    async function renderLeaderboard(){
+
+  if(!leaderboardOpenNow()){
+    document.getElementById("leaderMeta").textContent = "Leaderboard closed";
+    document.getElementById("leaderPodium").innerHTML = "";
+    document.getElementById("leaderList").innerHTML =
+      `<div class="notice">Leaderboard is currently disabled.</div>`;
+    return;
+  }
+
+  const { data } = await sb
+    .from("leaderboard_points")
+    .select("*")
+    .order("total_points", { ascending:false });
+
+  const rows = data || [];
+
+  document.getElementById("leaderMeta").textContent =
+    `${rows.length} students ranked`;
+
+  const podium = document.getElementById("leaderPodium");
+  podium.innerHTML = "";
+
+  const top3 = rows.slice(0,3);
+
+  top3.forEach((x,i)=>{
+    const el = document.createElement("div");
+    el.className = "podiumCard";
+
+    el.innerHTML = `
+      <div class="rank">#${i+1}</div>
+      <h4>${x.display_student_name}</h4>
+      <div style="font-weight:1000;font-size:18px;">
+        ${x.total_points} pts
+      </div>
+      <div class="meta">${x.total_pages} pages</div>
+    `;
+
+    podium.appendChild(el);
+  });
+
+document.getElementById("leaderList").innerHTML =
+rows.slice(3).map((x, i) => `
+  <div class="leaderRow">
+    <div class="leaderLeft">
+      <div class="leaderNum">#${i + 4}</div>
+      <div>
+        <div class="leaderName">${escapeHtml(x.display_student_name)}</div>
+        <div class="leaderSub">${Math.round(Number(x.total_pages || 0))} pages memorized</div>
+      </div>
+    </div>
+
+    <div class="leaderPts">
+      <strong>${Math.round(Number(x.total_points || 0))}</strong>
+      <span>points</span>
+    </div>
+  </div>
+`).join("") || `<div class="notice">No leaderboard data yet.</div>`;
 
     async function doLogout(){
       const { error } = await sb.auth.signOut();
@@ -1164,6 +1234,7 @@
       renderTabs();
       showView();
       await renderHome();
+      if(activeTab === "leaderboard") await renderLeaderboard();
       if(activeTab === "myquran") await renderMyQuran();
       if(activeTab === "teacher") await renderTeacher();
       if(activeTab === "admin") await renderAdmin();
