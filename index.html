@@ -35,13 +35,13 @@
     .pill small{color:var(--muted);font-weight:900}
     .btn{border:none;border-radius:12px;padding:10px 12px;background:var(--btn);color:#fff;font-weight:1000;cursor:pointer}
     .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
-    .btn.danger{background:#b91c1c;color:#fff}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-    .tab{
+    .btn.danger{background:#b91c1c}
+    .tabs,.subTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .tab,.subTab{
       padding:9px 12px;border-radius:999px;border:1px solid var(--line);
       background:rgba(255,255,255,.75);cursor:pointer;font-weight:1000;color:var(--btn2)
     }
-    .tab.active{background:var(--btn);color:#fff;border-color:transparent}
+    .tab.active,.subTab.active{background:var(--btn);color:#fff;border-color:transparent}
     .grid{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;align-items:start}
     @media(max-width:1050px){.grid{grid-template-columns:1fr}}
     .card{
@@ -55,30 +55,15 @@
     .cardHead h3{margin:0;font-size:16px}
     .cardHead small{color:var(--muted);font-weight:900}
     .cardBody{padding:12px 14px}
-    .leaderHeader{
-      background:linear-gradient(135deg,var(--green2),#22c55e);
-      color:#06331a;padding:18px 16px;text-align:center;font-weight:1000
-    }
-    .leaderHeader .sub{font-weight:900;opacity:.9;margin-top:6px}
-    .podium{display:flex;gap:10px;justify-content:center;align-items:stretch;padding:14px;flex-wrap:wrap}
-    .podiumCard{
-      width:170px;border-radius:14px;padding:12px;box-shadow:0 10px 25px rgba(2,6,23,.12);
-      text-align:center;border:1px solid rgba(2,6,23,.06)
-    }
-    .gold{background:var(--gold)} .silver{background:var(--silver)} .bronze{background:var(--bronze);color:#fff}
-    .rank{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.45);font-weight:1000}
-    .row{display:flex;justify-content:space-between;align-items:center;padding:12px 12px;border-bottom:1px solid var(--line);gap:10px}
+    .row{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--line);gap:10px}
     .row:last-child{border-bottom:none}
-    .row strong{font-size:14px}
-    .row .meta{color:var(--muted);font-size:12px;font-weight:900}
-    .row .right{text-align:right}
+    .meta{color:var(--muted);font-size:12px;font-weight:900}
     .badge{
       display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);
       background:rgba(255,255,255,.8);font-size:12px;font-weight:1000;color:var(--btn2)
     }
     .badge.ok{background:var(--ok);border-color:#a7e4b4}
     .badge.warn{background:var(--warn);border-color:#f3d27a}
-    .badge.danger{background:var(--danger);border-color:#ff8f8f}
     .notice{
       padding:10px 12px;border-radius:14px;border:1px solid var(--line);
       background:rgba(255,255,255,.75);color:var(--btn2);font-weight:900
@@ -111,84 +96,81 @@
     }
     .xbtn{border:none;background:transparent;font-size:20px;cursor:pointer}
 
-    .sullamShell{
-      background:#131313;color:#fff;border-radius:18px;padding:18px;
+    .leaderHero{
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,.24), transparent 35%),
+        radial-gradient(circle at top right, rgba(255,255,255,.18), transparent 30%),
+        linear-gradient(135deg, #14532d, #166534 45%, #15803d 100%);
+      color:#fff;
+      padding:28px 20px;
     }
-    .sullamHeader{
-      text-align:center;margin-bottom:18px;
+    .leaderHeroInner{text-align:center}
+    .leaderHeroInner h2{margin:6px 0 8px 0;font-size:30px}
+    .leaderHeroInner p{margin:0;opacity:.92;font-weight:800}
+    .leaderMini{
+      display:inline-block;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14);
+      font-size:12px;font-weight:1000;letter-spacing:.4px
     }
-    .sullamTitle{
-      font-size:34px;font-weight:1000;line-height:1.1;
+    .leaderboardWrap{padding:18px}
+    .podiumFancy{display:flex;justify-content:center;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+    .podiumFancy .podiumCard{
+      width:180px;text-align:center;border-radius:18px;padding:14px 12px;box-shadow:0 12px 25px rgba(2,6,23,.12);
+      border:1px solid rgba(15,23,42,.08)
     }
-    .sullamSub{
-      font-size:16px;opacity:.92;
+    .podiumFancy .podiumCard h4{margin:10px 0 6px 0;font-size:18px}
+    .podiumFancy .bigPts{font-size:22px;font-weight:1000}
+    .podiumFancy .smallMeta{margin-top:4px;color:#334155;font-size:13px;font-weight:900}
+    .podiumFancy .gold{min-height:220px;background:linear-gradient(180deg,#ffe27a,#ffd84d)}
+    .podiumFancy .silver{min-height:190px;background:linear-gradient(180deg,#e8ebef,#cfd3d8)}
+    .podiumFancy .bronze{min-height:170px;background:linear-gradient(180deg,#d79a63,#c77c2b);color:#fff}
+    .podiumFancy .bronze .smallMeta{color:#fff;opacity:.92}
+    .medal{font-size:34px;line-height:1}
+    .leaderListFancy{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.8)}
+    .leaderRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .leaderRow:last-child{border-bottom:none}
+    .leaderLeft{display:flex;align-items:center;gap:12px}
+    .leaderNum{
+      width:38px;height:38px;border-radius:999px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;
+      font-weight:1000;color:#0f172a
     }
-    .sullamTopStats{
-      display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:16px;
-    }
-    .sStat{
-      background:rgba(255,255,255,.08);
-      padding:10px 16px;border-radius:14px;font-weight:900;
-    }
-    .stairWrap{
-      display:flex;justify-content:center;overflow:auto;padding:10px 0;
-    }
-    #sullamStair{
-      display:flex;flex-direction:column;gap:5px;align-items:flex-start;
-    }
-    .sullamRow{
-      display:flex;gap:4px;
-    }
+    .leaderName{font-size:15px;font-weight:1000}
+    .leaderSub{font-size:12px;color:var(--muted);font-weight:900;margin-top:2px}
+    .leaderPts{text-align:right}
+    .leaderPts strong{display:block;font-size:16px}
+    .leaderPts span{font-size:12px;color:var(--muted);font-weight:900}
+
+    .sullamShell{background:#131313;color:#fff;border-radius:18px;padding:18px}
+    .sullamHeader{text-align:center;margin-bottom:18px}
+    .sullamTitle{font-size:34px;font-weight:1000;line-height:1.1}
+    .sullamSub{font-size:16px;opacity:.92}
+    .sullamTopStats{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-bottom:16px}
+    .sStat{background:rgba(255,255,255,.08);padding:10px 16px;border-radius:14px;font-weight:900}
+    .stairWrap{display:flex;justify-content:center;overflow:auto;padding:10px 0}
+    #sullamStair{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+    .sullamRow{display:flex;gap:4px}
     .sullamCell{
-      width:54px;height:46px;
-      display:flex;align-items:center;justify-content:center;
-      font-weight:1000;font-size:16px;
-      background:#ece8cf;color:#111827;
-      border:1px solid rgba(255,255,255,.18);
-      user-select:none;cursor:pointer;
-      position:relative;
+      width:54px;height:46px;display:flex;align-items:center;justify-content:center;
+      font-weight:1000;font-size:16px;background:#ece8cf;color:#111827;border:1px solid rgba(255,255,255,.18);
+      user-select:none;cursor:pointer;position:relative
     }
-    .sullamCell.done{
-      background:#b9ecb0;
-    }
+    .sullamCell.done{background:#b9ecb0}
     .sullamCell.done::after{
-      content:"✕";
-      position:absolute;
-      color:#c1121f;
-      font-size:28px;
-      font-weight:1000;
+      content:"✕";position:absolute;color:#c1121f;font-size:28px;font-weight:1000
     }
-    .sullamCell.current{
-      background:#f3d58b;
-    }
-    .sullamCell.selected{
-      outline:3px solid #22c55e;
-      outline-offset:-3px;
-    }
-    .sullamCell.checkpoint{
-      box-shadow:inset 0 0 0 3px #60a5fa;
-    }
-    .sullamBtns{
-      display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:24px;
-    }
+    .sullamCell.current{background:#f3d58b}
+    .sullamCell.selected{outline:3px solid #22c55e;outline-offset:-3px}
+    .sullamCell.checkpoint{box-shadow:inset 0 0 0 3px #60a5fa}
+    .sullamBtns{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:24px}
     .roundAction{
-      width:96px;height:96px;border:none;border-radius:999px;
-      font-size:34px;font-weight:1000;color:#fff;cursor:pointer;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      box-shadow:0 14px 26px rgba(0,0,0,.28);
+      width:96px;height:96px;border:none;border-radius:999px;font-size:34px;font-weight:1000;color:#fff;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 14px 26px rgba(0,0,0,.28)
     }
-    .roundAction span{
-      font-size:13px;margin-top:4px;font-weight:800;
-    }
-    .redBtn{background:#ef4444;}
-    .greenBtn{background:#22c55e;}
-    .orangeBtn{background:#f59e0b;}
-    .teacherOption{
-      padding:12px;border-bottom:1px solid #e5e7eb;cursor:pointer;font-weight:800;
-    }
-    .teacherOption:hover{
-      background:#f8fafc;
-    }
+    .roundAction span{font-size:13px;margin-top:4px;font-weight:800}
+    .redBtn{background:#ef4444}
+    .greenBtn{background:#22c55e}
+    .orangeBtn{background:#f59e0b}
+    .teacherOption{padding:12px;border-bottom:1px solid #e5e7eb;cursor:pointer;font-weight:800}
+    .teacherOption:hover{background:#f8fafc}
   </style>
 </head>
 <body>
@@ -217,40 +199,49 @@
       </div>
 
       <div class="card">
-        <div class="leaderHeader">
-          <div style="font-size:18px;">Sullam Leaderboard</div>
-          <div class="sub" id="totalMeta">—</div>
+        <div class="cardHead" style="background:linear-gradient(135deg,var(--green2),#22c55e);color:#06331a;">
+          <h3>Pending</h3><small>Waiting for teacher</small>
         </div>
-        <div class="podium" id="podium"></div>
-        <div class="cardBody" id="totalList"></div>
+        <div class="cardBody" id="homeMiddle"></div>
       </div>
 
       <div class="card">
         <div class="cardHead" style="background:linear-gradient(135deg,var(--blue2),#93c5fd);color:#06253e;">
-          <h3>Checkpoint Rules</h3><small>Teacher-focused steps</small>
+          <h3>Qadeem</h3><small>Review schedule</small>
         </div>
-        <div class="cardBody">
-          <div class="notice">
-            Checkpoints: 11, 22, 33, 44, 50, 51, 52, 53, 54, 55
-            <br><br>
-            Students select a teacher and cannot move forward until the request is accepted.
-          </div>
+        <div class="cardBody" id="homeRight"></div>
+      </div>
+    </div>
+
+    <div id="viewLeaderboard" class="card hidden">
+      <div class="leaderHero">
+        <div class="leaderHeroInner">
+          <div class="leaderMini">Official Ranking</div>
+          <h2>Quran Leaderboard</h2>
+          <p id="leaderMeta">—</p>
         </div>
+      </div>
+      <div class="leaderboardWrap">
+        <div class="podium podiumFancy" id="leaderPodium"></div>
+        <div class="leaderListFancy" id="leaderList"></div>
       </div>
     </div>
 
     <div id="viewMyQuran" class="card hidden">
-      <div class="cardHead"><h3>My Quran</h3><small>Sullam only</small></div>
-      <div class="cardBody" id="myQuranBody"></div>
+      <div class="cardHead"><h3>My Quran</h3><small>Jadeed • Qadeem • Sullam</small></div>
+      <div class="cardBody">
+        <div class="subTabs" id="myQuranTabs"></div>
+        <div id="myQuranBody"></div>
+      </div>
     </div>
 
     <div id="viewTeacher" class="card hidden">
-      <div class="cardHead"><h3>Teacher Zone</h3><small>Pending requests + track students</small></div>
+      <div class="cardHead"><h3>Teacher Zone</h3><small>Approve + track students</small></div>
       <div class="cardBody" id="teacherBody"></div>
     </div>
 
     <div id="viewAdmin" class="card hidden">
-      <div class="cardHead"><h3>Admin</h3><small>Students + leaderboard settings</small></div>
+      <div class="cardHead"><h3>Admin</h3><small>Roles + leaderboard settings</small></div>
       <div class="cardBody" id="adminBody"></div>
     </div>
   </div>
@@ -277,19 +268,25 @@
     let profile = null;
     let settings = null;
     let activeTab = "home";
+    let myQuranTab = "jadeed";
     let approvedStep = 0;
     let targetStep = 1;
-    let selfRoster = null;
 
     const CHECKPOINT_STEPS = new Set([11,22,33,44,50,51,52,53,54,55]);
 
-const TABS = [
-  { key:"home", label:"Home", guard:"any" },
-  { key:"leaderboard", label:"Leaderboard", guard:"any" },
-  { key:"myquran", label:"My Quran", guard:"any" },
-  { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
-  { key:"admin", label:"Admin", guard:"admin" }
-];
+    const TABS = [
+      { key:"home", label:"Home", guard:"any" },
+      { key:"leaderboard", label:"Leaderboard", guard:"any" },
+      { key:"myquran", label:"My Quran", guard:"any" },
+      { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
+      { key:"admin", label:"Admin", guard:"admin" }
+    ];
+
+    const MY_QURAN_TABS = [
+      { key:"jadeed", label:"New (Jadeed)" },
+      { key:"qadeem", label:"Old (Qadeem)" },
+      { key:"sullam", label:"Sullam" }
+    ];
 
     function escapeHtml(s){
       return String(s ?? "").replace(/[&<>"']/g, c => ({
@@ -350,27 +347,16 @@ const TABS = [
     }
 
     function showView(){
-      const ids = ["viewHome","viewMyQuran","viewTeacher","viewAdmin"];
-      ids.forEach(id => document.getElementById(id).classList.add("hidden"));
-const map = {
-  home:"viewHome",
-  leaderboard:"viewLeaderboard",
-  myquran:"viewMyQuran",
-  teacher:"viewTeacher",
-  admin:"viewAdmin"
-};
+      const map = {
+        home:"viewHome",
+        leaderboard:"viewLeaderboard",
+        myquran:"viewMyQuran",
+        teacher:"viewTeacher",
+        admin:"viewAdmin"
+      };
+      Object.values(map).forEach(id => document.getElementById(id).classList.add("hidden"));
       document.getElementById(map[activeTab]).classList.remove("hidden");
     }
-    <div id="viewLeaderboard" class="card hidden">
-  <div class="leaderHeader">
-    <div style="font-size:18px;">Sullam Leaderboard</div>
-    <div class="sub" id="leaderMeta">—</div>
-  </div>
-
-  <div class="podium" id="leaderPodium"></div>
-
-  <div class="cardBody" id="leaderList"></div>
-</div>
 
     async function loadMe(){
       const { data: { user } } = await sb.auth.getUser();
@@ -378,7 +364,6 @@ const map = {
 
       if(!me){
         profile = null;
-        selfRoster = null;
         return;
       }
 
@@ -397,14 +382,6 @@ const map = {
           role: "student"
         };
       }
-
-      const { data: roster } = await sb
-        .from("student_roster")
-        .select("*")
-        .eq("linked_user_id", me.id)
-        .limit(1);
-
-      selfRoster = roster && roster.length ? roster[0] : null;
     }
 
     async function loadSettings(){
@@ -415,9 +392,12 @@ const map = {
         .maybeSingle();
 
       settings = data || {
-        leaderboard_enabled: false,
-        leaderboard_start_at: null,
-        leaderboard_end_at: null
+        leaderboard_enabled:false,
+        leaderboard_start_at:null,
+        leaderboard_end_at:null,
+        points_qadeem:2000,
+        points_jadeed:2000,
+        points_sullam:6000
       };
     }
 
@@ -429,6 +409,24 @@ const map = {
       if(start && now < start) return false;
       if(end && now > end) return false;
       return true;
+    }
+
+    async function loadApprovedStep(){
+      if(!me){
+        approvedStep = 0;
+        targetStep = 1;
+        return;
+      }
+
+      const { data } = await sb
+        .from("sullam_progress")
+        .select("step_number")
+        .eq("user_id", me.id)
+        .order("step_number", { ascending:false })
+        .limit(1);
+
+      approvedStep = data && data.length ? Number(data[0].step_number || 0) : 0;
+      targetStep = Math.min(55, Math.max(1, approvedStep + 1));
     }
 
     async function bootData(){
@@ -464,7 +462,6 @@ const map = {
         </div>
         <button class="btn" id="authContinueBtn" style="width:100%;">Continue</button>
       `);
-
       document.getElementById("authContinueBtn").addEventListener("click", doAuth);
     }
 
@@ -484,18 +481,15 @@ const map = {
           alert("Display name required.");
           return;
         }
-
         const { error } = await sb.auth.signUp({
           email,
           password,
           options: { data: { display_name: name } }
         });
-
         if(error){
           alert(error.message);
           return;
         }
-
         alert("Signed up ✅ Now sign in.");
         return;
       }
@@ -510,64 +504,6 @@ const map = {
       await bootData();
       await renderAll();
     }
-    async function renderLeaderboard(){
-
-  if(!leaderboardOpenNow()){
-    document.getElementById("leaderMeta").textContent = "Leaderboard closed";
-    document.getElementById("leaderPodium").innerHTML = "";
-    document.getElementById("leaderList").innerHTML =
-      `<div class="notice">Leaderboard is currently disabled.</div>`;
-    return;
-  }
-
-  const { data } = await sb
-    .from("leaderboard_points")
-    .select("*")
-    .order("total_points", { ascending:false });
-
-  const rows = data || [];
-
-  document.getElementById("leaderMeta").textContent =
-    `${rows.length} students ranked`;
-
-  const podium = document.getElementById("leaderPodium");
-  podium.innerHTML = "";
-
-  const top3 = rows.slice(0,3);
-
-  top3.forEach((x,i)=>{
-    const el = document.createElement("div");
-    el.className = "podiumCard";
-
-    el.innerHTML = `
-      <div class="rank">#${i+1}</div>
-      <h4>${x.display_student_name}</h4>
-      <div style="font-weight:1000;font-size:18px;">
-        ${x.total_points} pts
-      </div>
-      <div class="meta">${x.total_pages} pages</div>
-    `;
-
-    podium.appendChild(el);
-  });
-
-document.getElementById("leaderList").innerHTML =
-rows.slice(3).map((x, i) => `
-  <div class="leaderRow">
-    <div class="leaderLeft">
-      <div class="leaderNum">#${i + 4}</div>
-      <div>
-        <div class="leaderName">${escapeHtml(x.display_student_name)}</div>
-        <div class="leaderSub">${Math.round(Number(x.total_pages || 0))} pages memorized</div>
-      </div>
-    </div>
-
-    <div class="leaderPts">
-      <strong>${Math.round(Number(x.total_points || 0))}</strong>
-      <span>points</span>
-    </div>
-  </div>
-`).join("") || `<div class="notice">No leaderboard data yet.</div>`;
 
     async function doLogout(){
       const { error } = await sb.auth.signOut();
@@ -577,101 +513,11 @@ rows.slice(3).map((x, i) => `
       }
       me = null;
       profile = null;
-      selfRoster = null;
       activeTab = "home";
+      myQuranTab = "jadeed";
       approvedStep = 0;
       targetStep = 1;
       await renderAll();
-    }
-
-    async function fetchLeaderboard(){
-
-  if(!leaderboardOpenNow()) return [];
-
-  const { data } = await sb
-    .from("leaderboard_points")
-    .select("*")
-    .order("total_points", { ascending:false });
-
-  return data || [];
-}
-
-    async function renderHome(){
-      document.getElementById("homeLeft").innerHTML = me
-        ? `<div class="notice">Approved step: <b>${approvedStep}</b> / 55</div>`
-        : `<div class="notice">Sign in to track your Sullam.</div>`;
-
-      const rows = await fetchLeaderboard();
-
-      if(!leaderboardOpenNow()){
-        document.getElementById("totalMeta").textContent = "Hidden right now";
-        document.getElementById("podium").innerHTML = "";
-        document.getElementById("totalList").innerHTML = `<div class="notice">Leaderboard is off or outside the active date/time window.</div>`;
-        return;
-      }
-
-      const totalPagesAll = rows.reduce((a, x) => a + Number(x.total_pages || 0), 0);
-      document.getElementById("totalMeta").textContent = `${totalPagesAll} pages memorized`;
-      
-      const podium = document.getElementById("podium");
-      podium.innerHTML = "";
-      const top3 = rows.slice(0,3);
-      const order = [{slot:2, cls:"silver"},{slot:1, cls:"gold"},{slot:3, cls:"bronze"}];
-
-      for(const p of order){
-        const item = top3[p.slot-1];
-        const el = document.createElement("div");
-        el.className = `podiumCard ${p.cls}`;
-        el.innerHTML = item ? `
-          <div class="rank">#${p.slot}</div>
-          <h4 style="margin:6px 0 4px 0;">${escapeHtml(item.display_student_name)}</h4>
-          <div style="font-weight:1000;font-size:18px;">${Math.round(Number(item.total_points||0))} pts</div>
-          <div class="meta">${Math.round(Number(item.total_pages||0))} pages</div>
-        ` : `
-          <div class="rank">#${p.slot}</div>
-          <h4>—</h4>
-          <div style="font-weight:1000;font-size:18px;">Step 0</div>
-        `;
-        podium.appendChild(el);
-      }
-
-      document.getElementById("totalList").innerHTML = rows.slice(0,10).map((x,i)=>`
-        <div class="row">
-          <div>
-            <strong>#${i+1} ${escapeHtml(x.display_student_name)}</strong>
-            <div class="meta">${Math.round(Number(x.total_pages||0))} pages • ${Math.round(Number(x.total_points||0))} pts</div>
-          </div>
-          <div class="right"><strong>${Math.round(Number(x.total_points||0))}</strong></div>
-        </div>
-      `).join("") || `<div class="meta">No data yet.</div>`;
-    }
-
-    async function loadApprovedStep(){
-      if(!me){
-        approvedStep = 0;
-        targetStep = 1;
-        return;
-      }
-
-      if(selfRoster){
-        const { data } = await sb
-          .from("leaderboard_points")
-          .select("*")
-          .eq("student_roster_id", selfRoster.id)
-          .limit(1);
-
-        approvedStep = data && data.length ? Number(data[0].approved_step || 0) : 0;
-      } else {
-        const { data } = await sb
-          .from("leaderboard_points")
-          .select("*")
-          .eq("user_id", me.id)
-          .limit(1);
-
-        approvedStep = data && data.length ? Number(data[0].approved_step || 0) : 0;
-      }
-
-      targetStep = Math.min(55, Math.max(1, approvedStep + 1));
     }
 
     async function fetchTeachers(){
@@ -680,6 +526,295 @@ rows.slice(3).map((x, i) => `
         .select("id, display_name, role")
         .in("role", ["teacher","admin"]);
       return data || [];
+    }
+
+    async function fetchStudents(){
+      const { data } = await sb
+        .from("profiles")
+        .select("id, display_name, role")
+        .eq("role", "student")
+        .order("display_name", { ascending:true });
+      return data || [];
+    }
+
+    async function renderHome(){
+      document.getElementById("homeLeft").innerHTML = me
+        ? `<div class="notice">Approved Sullam step: <b>${approvedStep}</b> / 55</div>`
+        : `<div class="notice">Sign in to track your Quran.</div>`;
+
+      if(me){
+        const { data: pending } = await sb
+          .from("memorization_requests")
+          .select("*")
+          .eq("user_id", me.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending:false })
+          .limit(5);
+
+        document.getElementById("homeMiddle").innerHTML = (pending || []).length
+          ? (pending || []).map(x => `
+              <div class="row">
+                <div>
+                  <strong>${escapeHtml(x.type)}</strong>
+                  <div class="meta">${escapeHtml(x.surah_name)} • Page ${x.page_number}</div>
+                </div>
+                <span class="badge warn">pending</span>
+              </div>
+            `).join("")
+          : `<div class="notice">No pending requests.</div>`;
+
+        const { data: qadeem } = await sb
+          .from("qadeem_reviews")
+          .select("*")
+          .eq("user_id", me.id)
+          .order("review_day", { ascending:true })
+          .limit(5);
+
+        document.getElementById("homeRight").innerHTML = (qadeem || []).length
+          ? (qadeem || []).map(x => `
+              <div class="row">
+                <div>
+                  <strong>${escapeHtml(x.surah_name)}</strong>
+                  <div class="meta">Day ${x.review_day} • Repeat ${x.required_repetitions}</div>
+                </div>
+                <span class="badge ${x.status === 'done' ? 'ok' : 'warn'}">${x.status}</span>
+              </div>
+            `).join("")
+          : `<div class="notice">No qadeem items yet.</div>`;
+      } else {
+        document.getElementById("homeMiddle").innerHTML = `<div class="notice">Sign in first.</div>`;
+        document.getElementById("homeRight").innerHTML = `<div class="notice">Sign in first.</div>`;
+      }
+    }
+
+    async function renderLeaderboard(){
+      if(!leaderboardOpenNow()){
+        document.getElementById("leaderMeta").textContent = "Leaderboard is currently disabled";
+        document.getElementById("leaderPodium").innerHTML = "";
+        document.getElementById("leaderList").innerHTML =
+          `<div class="notice">Leaderboard is off or outside the active date/time window.</div>`;
+        return;
+      }
+
+      const { data, error } = await sb
+        .from("leaderboard_points")
+        .select("*")
+        .order("total_points", { ascending:false });
+
+      if(error){
+        document.getElementById("leaderMeta").textContent = "Error loading leaderboard";
+        document.getElementById("leaderPodium").innerHTML = "";
+        document.getElementById("leaderList").innerHTML = `<div class="notice">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+
+      const rows = data || [];
+      const totalPages = rows.reduce((sum, r) => sum + Number(r.total_pages || 0), 0);
+
+      document.getElementById("leaderMeta").textContent =
+        `${rows.length} students • ${totalPages} pages memorized`;
+
+      const podium = document.getElementById("leaderPodium");
+      podium.innerHTML = "";
+
+      const top3 = rows.slice(0, 3);
+      const podiumOrder = [
+        { index: 1, cls: "silver", medal: "🥈" },
+        { index: 0, cls: "gold", medal: "🥇" },
+        { index: 2, cls: "bronze", medal: "🥉" }
+      ];
+
+      podiumOrder.forEach(p => {
+        const item = top3[p.index];
+        const card = document.createElement("div");
+        card.className = `podiumCard ${p.cls}`;
+
+        if(item){
+          card.innerHTML = `
+            <div class="medal">${p.medal}</div>
+            <div class="rank">#${p.index + 1}</div>
+            <h4>${escapeHtml(item.display_student_name)}</h4>
+            <div class="bigPts">${Math.round(Number(item.total_points || 0))} pts</div>
+            <div class="smallMeta">${Math.round(Number(item.total_pages || 0))} pages memorized</div>
+          `;
+        } else {
+          card.innerHTML = `
+            <div class="medal">${p.medal}</div>
+            <div class="rank">#${p.index + 1}</div>
+            <h4>—</h4>
+            <div class="bigPts">0 pts</div>
+            <div class="smallMeta">0 pages memorized</div>
+          `;
+        }
+        podium.appendChild(card);
+      });
+
+      document.getElementById("leaderList").innerHTML =
+        rows.slice(3).map((x, i) => `
+          <div class="leaderRow">
+            <div class="leaderLeft">
+              <div class="leaderNum">#${i + 4}</div>
+              <div>
+                <div class="leaderName">${escapeHtml(x.display_student_name)}</div>
+                <div class="leaderSub">${Math.round(Number(x.total_pages || 0))} pages memorized</div>
+              </div>
+            </div>
+            <div class="leaderPts">
+              <strong>${Math.round(Number(x.total_points || 0))}</strong>
+              <span>points</span>
+            </div>
+          </div>
+        `).join("") || `<div class="notice">No leaderboard data yet.</div>`;
+    }
+
+    function renderMyQuranTabs(){
+      const el = document.getElementById("myQuranTabs");
+      el.innerHTML = "";
+      for(const t of MY_QURAN_TABS){
+        const b = document.createElement("button");
+        b.className = "subTab" + (myQuranTab === t.key ? " active" : "");
+        b.textContent = t.label;
+        b.addEventListener("click", () => {
+          myQuranTab = t.key;
+          renderMyQuranBody();
+        });
+        el.appendChild(b);
+      }
+    }
+
+    async function saveMemorization(type){
+      if(!me || !profile) return;
+
+      const surah_name = document.getElementById("mqSurah").value.trim();
+      const page_number = Number(document.getElementById("mqPage").value || 0);
+      const ayah_from = Number(document.getElementById("mqAyahFrom").value || 0) || null;
+      const ayah_to = Number(document.getElementById("mqAyahTo").value || 0) || null;
+      const pages_count = Number(document.getElementById("mqPagesCount").value || 1);
+      const teacher_id = document.getElementById("mqTeacher").value || null;
+      const note = document.getElementById("mqNote").value.trim();
+
+      if(!surah_name || !page_number || !teacher_id){
+        alert("Enter surah, page, and teacher.");
+        return;
+      }
+
+      const teachers = await fetchTeachers();
+      const teacher = teachers.find(t => t.id === teacher_id);
+      if(!teacher){
+        alert("Teacher not found.");
+        return;
+      }
+
+      const payload = {
+        user_id: me.id,
+        type,
+        surah_name,
+        page_number,
+        ayah_from,
+        ayah_to,
+        pages_count,
+        step_number: null,
+        teacher_id,
+        teacher_name: teacher.display_name,
+        note,
+        status: "pending"
+      };
+
+      const { error } = await sb.from("memorization_requests").insert(payload);
+      if(error){
+        alert(error.message);
+        return;
+      }
+
+      alert(`${type} sent to teacher ✅`);
+      await renderAll();
+    }
+
+    function renderJadeedForm(teachers){
+      return `
+        <div class="notice">Jadeed will not count until the teacher accepts it.</div>
+        <div class="hr"></div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Surah name</label>
+            <input id="mqSurah" placeholder="e.g. سورة نوح" />
+          </div>
+          <div class="formRow">
+            <label>Page number</label>
+            <input id="mqPage" type="number" min="1" />
+          </div>
+        </div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Ayah from</label>
+            <input id="mqAyahFrom" type="number" min="1" />
+          </div>
+          <div class="formRow">
+            <label>Ayah to</label>
+            <input id="mqAyahTo" type="number" min="1" />
+          </div>
+        </div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Pages count</label>
+            <input id="mqPagesCount" type="number" min="1" value="1" />
+          </div>
+          <div class="formRow">
+            <label>Teacher</label>
+            <select id="mqTeacher">
+              <option value="">Select teacher</option>
+              ${teachers.map(t => `<option value="${t.id}">${escapeHtml(t.display_name)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="formRow">
+          <label>Note</label>
+          <textarea id="mqNote"></textarea>
+        </div>
+        <button class="btn" id="saveJadeedBtn">Send Jadeed</button>
+      `;
+    }
+
+    async function renderQadeemToday(){
+      if(!me) return `<div class="notice">Please log in first.</div>`;
+
+      const { data, error } = await sb
+        .from("qadeem_reviews")
+        .select("*")
+        .eq("user_id", me.id)
+        .order("review_day", { ascending:true });
+
+      if(error){
+        return `<div class="notice">${escapeHtml(error.message)}</div>`;
+      }
+
+      const rows = data || [];
+      if(!rows.length){
+        return `
+          <div class="notice">
+            Qadeem appears after approved Sullam records.
+            <br><br>
+            Day 1 = 5 times<br>
+            Day 2 = 4 times<br>
+            Day 3 = 3 times<br>
+            Day 4 = 2 times<br>
+            Day 5 = 1 time
+          </div>
+        `;
+      }
+
+      return rows.map(r => `
+        <div class="row">
+          <div>
+            <strong>${escapeHtml(r.surah_name)}</strong>
+            <div class="meta">Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
+            <div class="meta">Day ${r.review_day} • Required ${r.required_repetitions} • Completed ${r.completed_repetitions}</div>
+          </div>
+          <div>
+            <span class="badge ${r.status === 'done' ? 'ok' : 'warn'}">${escapeHtml(r.status)}</span>
+          </div>
+        </div>
+      `).join("");
     }
 
     function buildSullamRows() {
@@ -697,22 +832,12 @@ rows.slice(3).map((x, i) => `
       ];
     }
 
-    async function renderMyQuran(){
-      const body = document.getElementById("myQuranBody");
-
-      if(!me){
-        body.innerHTML = `<div class="notice">Please sign in first.</div>`;
-        return;
-      }
-
-      const teachers = await fetchTeachers();
-      const teacherOptions = teachers.map(t => `<option value="${t.id}">${escapeHtml(t.display_name)}</option>`).join("");
-
-      body.innerHTML = `
+    async function renderSullam(teachers){
+      return `
         <div class="notice">
-          Students must select a teacher and cannot move to the next official step until the request is accepted.
+          Students select a teacher and cannot progress until accepted.
           <br><br>
-          Teacher-focused steps: 11, 22, 33, 44, 50-55
+          Teacher checkpoints: 11, 22, 33, 44, 50, 51, 52, 53, 54, 55
         </div>
 
         <div class="hr"></div>
@@ -722,7 +847,7 @@ rows.slice(3).map((x, i) => `
             <label>Teacher</label>
             <select id="studentTeacherId">
               <option value="">Select teacher</option>
-              ${teacherOptions}
+              ${teachers.map(t => `<option value="${t.id}">${escapeHtml(t.display_name)}</option>`).join("")}
             </select>
           </div>
           <div class="formRow">
@@ -775,11 +900,79 @@ rows.slice(3).map((x, i) => `
           </div>
         </div>
       `;
+    }
 
-      const box = document.getElementById("sullamStair");
-      const rows = buildSullamRows();
+    async function sendSullamRequest(){
+      if(!me || !profile) return;
 
-      rows.forEach(rowArr => {
+      const teacherId = document.getElementById("studentTeacherId").value;
+      const surah = document.getElementById("sSurah").value.trim();
+      const page = Number(document.getElementById("sPage").value || 0);
+      const ayahFrom = Number(document.getElementById("sAyahFrom").value || 0) || null;
+      const ayahTo = Number(document.getElementById("sAyahTo").value || 0) || null;
+      const note = document.getElementById("sNote").value.trim();
+
+      if(!teacherId || !surah || !page){
+        alert("Enter teacher, surah, and page.");
+        return;
+      }
+      if(targetStep !== approvedStep + 1){
+        alert("You cannot progress until the previous step is accepted.");
+        return;
+      }
+
+      const teachers = await fetchTeachers();
+      const teacher = teachers.find(t => t.id === teacherId);
+      if(!teacher){
+        alert("Teacher not found.");
+        return;
+      }
+
+      const payload = {
+        user_id: me.id,
+        type: "sullam",
+        surah_name: surah,
+        page_number: page,
+        ayah_from: ayahFrom,
+        ayah_to: ayahTo,
+        pages_count: 1,
+        step_number: targetStep,
+        teacher_id: teacher.id,
+        teacher_name: teacher.display_name,
+        note,
+        status: "pending"
+      };
+
+      const { error } = await sb.from("memorization_requests").insert(payload);
+      if(error){
+        alert(error.message);
+        return;
+      }
+
+      alert("Sullam request sent ✅");
+      await renderAll();
+    }
+
+    async function renderMyQuranBody(){
+      renderMyQuranTabs();
+      const body = document.getElementById("myQuranBody");
+      const teachers = await fetchTeachers();
+
+      if(myQuranTab === "jadeed"){
+        body.innerHTML = renderJadeedForm(teachers);
+        document.getElementById("saveJadeedBtn").addEventListener("click", () => saveMemorization("jadeed"));
+        return;
+      }
+
+      if(myQuranTab === "qadeem"){
+        body.innerHTML = await renderQadeemToday();
+        return;
+      }
+
+      body.innerHTML = await renderSullam(teachers);
+
+      const stair = document.getElementById("sullamStair");
+      buildSullamRows().forEach(rowArr => {
         const row = document.createElement("div");
         row.className = "sullamRow";
 
@@ -796,22 +989,22 @@ rows.slice(3).map((x, i) => `
           cell.addEventListener("click", () => {
             if(num <= approvedStep) return;
             targetStep = num;
-            renderMyQuran();
+            renderMyQuranBody();
           });
 
           row.appendChild(cell);
         });
 
-        box.appendChild(row);
+        stair.appendChild(row);
       });
 
       document.getElementById("btnStepBack").addEventListener("click", () => {
         targetStep = Math.max(1, targetStep - 1);
-        renderMyQuran();
+        renderMyQuranBody();
       });
 
       document.getElementById("btnStepSkip").addEventListener("click", () => {
-        const v = prompt("Skip to step (only future steps):", String(targetStep));
+        const v = prompt("Skip to step (future steps only):", String(targetStep));
         if (v === null) return;
         const n = Number(v);
         if (!Number.isFinite(n) || n < approvedStep + 1 || n > 55) {
@@ -819,64 +1012,10 @@ rows.slice(3).map((x, i) => `
           return;
         }
         targetStep = n;
-        renderMyQuran();
+        renderMyQuranBody();
       });
 
-      document.getElementById("btnStepConfirm").addEventListener("click", sendStudentRequest);
-    }
-
-    async function sendStudentRequest(){
-      if(!me || !profile) return;
-
-      const teacherId = document.getElementById("studentTeacherId").value;
-      const surah = document.getElementById("sSurah").value.trim();
-      const page = Number(document.getElementById("sPage").value || 0);
-      const ayahFrom = Number(document.getElementById("sAyahFrom").value || 0) || null;
-      const ayahTo = Number(document.getElementById("sAyahTo").value || 0) || null;
-      const note = document.getElementById("sNote").value.trim();
-
-      if(!teacherId){
-        alert("Select a teacher.");
-        return;
-      }
-      if(!surah || !page){
-        alert("Enter surah and page.");
-        return;
-      }
-      if(targetStep !== approvedStep + 1){
-        alert("You cannot progress until the previous step is accepted.");
-        return;
-      }
-
-      const teachers = await fetchTeachers();
-      const teacher = teachers.find(t => t.id === teacherId);
-      if(!teacher){
-        alert("Teacher not found.");
-        return;
-      }
-
-      const payload = {
-        student_roster_id: selfRoster?.id || null,
-        user_id: me.id,
-        display_student_name: selfRoster?.name || profile.display_name || me.email,
-        teacher_id: teacher.id,
-        teacher_name: teacher.display_name,
-        step_number: targetStep,
-        surah_name: surah,
-        page_number: page,
-        ayah_from: ayahFrom,
-        ayah_to: ayahTo,
-        note,
-        status: "pending"
-      };
-
-      const { error } = await sb.from("sullam_requests").insert(payload);
-      if(error){
-        alert(error.message);
-        return;
-      }
-
-      alert("Request sent to teacher ✅");
+      document.getElementById("btnStepConfirm").addEventListener("click", sendSullamRequest);
     }
 
     async function renderTeacher(){
@@ -887,7 +1026,7 @@ rows.slice(3).map((x, i) => `
       }
 
       const { data: requests, error } = await sb
-        .from("sullam_requests")
+        .from("memorization_requests")
         .select("*")
         .eq("status","pending")
         .order("created_at", { ascending:false });
@@ -897,10 +1036,7 @@ rows.slice(3).map((x, i) => `
         return;
       }
 
-      const { data: students } = await sb
-        .from("student_roster")
-        .select("*")
-        .order("name", { ascending:true });
+      const students = await fetchStudents();
 
       body.innerHTML = `
         <div class="notice"><b>Pending Requests</b></div>
@@ -909,11 +1045,12 @@ rows.slice(3).map((x, i) => `
           (requests || []).length ? (requests || []).map(r => `
             <div class="row">
               <div>
-                <strong>${escapeHtml(r.display_student_name)}</strong>
-                <div class="meta">Step ${r.step_number} • ${escapeHtml(r.surah_name)} • Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
-                <div class="meta">Teacher: ${escapeHtml(r.teacher_name || "—")}</div>
+                <strong>${escapeHtml(r.type)} • ${escapeHtml(r.surah_name)}</strong>
+                <div class="meta">Student user: ${escapeHtml(String(r.user_id || ""))}</div>
+                <div class="meta">Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
+                ${r.type === "sullam" ? `<div class="meta">Step ${r.step_number}</div>` : `<div class="meta">${Number(r.pages_count || 0)} pages</div>`}
               </div>
-              <div class="right" style="display:flex;gap:8px;flex-wrap:wrap;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn approve-btn" data-id="${r.id}">Approve</button>
                 <button class="btn danger deny-btn" data-id="${r.id}">Deny</button>
               </div>
@@ -930,12 +1067,27 @@ rows.slice(3).map((x, i) => `
             <label>Student</label>
             <select id="trackStudentId">
               <option value="">Select student</option>
-              ${(students || []).map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("")}
+              ${students.map(s => `<option value="${s.id}">${escapeHtml(s.display_name)}</option>`).join("")}
             </select>
           </div>
           <div class="formRow">
-            <label>Step number</label>
+            <label>Type</label>
+            <select id="trackType">
+              <option value="jadeed">Jadeed</option>
+              <option value="qadeem">Qadeem</option>
+              <option value="sullam">Sullam</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Step number (only for Sullam)</label>
             <input id="trackStep" type="number" min="1" max="55" />
+          </div>
+          <div class="formRow">
+            <label>Pages count</label>
+            <input id="trackPages" type="number" min="1" value="1" />
           </div>
         </div>
 
@@ -979,43 +1131,59 @@ rows.slice(3).map((x, i) => `
     }
 
     async function approveReq(id){
-      const { data: r, error } = await sb.from("sullam_requests").select("*").eq("id", id).single();
+      const { data: r, error } = await sb.from("memorization_requests").select("*").eq("id", id).single();
       if(error){
         alert(error.message);
         return;
       }
 
-      const { error: e1 } = await sb.from("sullam_records").insert({
-        student_roster_id: r.student_roster_id,
+      const { data: rec, error: e1 } = await sb.from("memorization_records").insert({
         user_id: r.user_id,
-        display_student_name: r.display_student_name,
-        teacher_id: r.teacher_id,
-        teacher_name: r.teacher_name,
-        step_number: r.step_number,
+        type: r.type,
         surah_name: r.surah_name,
         page_number: r.page_number,
         ayah_from: r.ayah_from,
         ayah_to: r.ayah_to,
+        pages_count: r.pages_count,
+        step_number: r.step_number,
+        teacher_id: r.teacher_id,
+        teacher_name: r.teacher_name,
         note: r.note,
-        approved_by: me.id
-      });
+        confirmed_by: me.id
+      }).select().single();
 
       if(e1){
         alert(e1.message);
         return;
       }
 
-      const { error: e2 } = await sb
-        .from("sullam_requests")
+      if(r.type === "sullam"){
+        const { error: e2 } = await sb.from("sullam_progress").insert({
+          user_id: r.user_id,
+          step_number: r.step_number,
+          surah_name: r.surah_name,
+          page_number: r.page_number,
+          ayah_from: r.ayah_from,
+          ayah_to: r.ayah_to,
+          approved_record_id: rec.id
+        });
+        if(e2){
+          alert(e2.message);
+          return;
+        }
+      }
+
+      const { error: e3 } = await sb
+        .from("memorization_requests")
         .update({
-          status: "approved",
+          status:"approved",
           handled_by: me.id,
           handled_at: new Date().toISOString()
         })
         .eq("id", id);
 
-      if(e2){
-        alert(e2.message);
+      if(e3){
+        alert(e3.message);
         return;
       }
 
@@ -1026,9 +1194,9 @@ rows.slice(3).map((x, i) => `
 
     async function denyReq(id){
       const { error } = await sb
-        .from("sullam_requests")
+        .from("memorization_requests")
         .update({
-          status: "denied",
+          status:"denied",
           handled_by: me.id,
           handled_at: new Date().toISOString()
         })
@@ -1045,47 +1213,65 @@ rows.slice(3).map((x, i) => `
 
     async function teacherTrackStudent(){
       const studentId = document.getElementById("trackStudentId").value;
-      const step = Number(document.getElementById("trackStep").value || 0);
+      const type = document.getElementById("trackType").value;
+      const step = Number(document.getElementById("trackStep").value || 0) || null;
+      const pages = Number(document.getElementById("trackPages").value || 1);
       const surah = document.getElementById("trackSurah").value.trim();
       const page = Number(document.getElementById("trackPage").value || 0);
       const ayahFrom = Number(document.getElementById("trackAyahFrom").value || 0) || null;
       const ayahTo = Number(document.getElementById("trackAyahTo").value || 0) || null;
       const note = document.getElementById("trackNote").value.trim();
 
-      if(!studentId || !step || !surah || !page){
-        alert("Fill student, step, surah, and page.");
+      if(!studentId || !type || !surah || !page){
+        alert("Fill student, type, surah, and page.");
+        return;
+      }
+      if(type === "sullam" && !step){
+        alert("Enter step number for Sullam.");
         return;
       }
 
-      const { data: student, error } = await sb
-        .from("student_roster")
-        .select("*")
-        .eq("id", studentId)
-        .single();
-
-      if(error){
-        alert(error.message);
+      const students = await fetchStudents();
+      const student = students.find(s => s.id === studentId);
+      if(!student){
+        alert("Student not found.");
         return;
       }
 
-      const { error: e1 } = await sb.from("sullam_records").insert({
-        student_roster_id: student.id,
-        user_id: student.linked_user_id,
-        display_student_name: student.name,
-        teacher_id: me.id,
-        teacher_name: profile.display_name,
-        step_number: step,
+      const { data: rec, error: e1 } = await sb.from("memorization_records").insert({
+        user_id: student.id,
+        type,
         surah_name: surah,
         page_number: page,
         ayah_from: ayahFrom,
         ayah_to: ayahTo,
+        pages_count: pages,
+        step_number: type === "sullam" ? step : null,
+        teacher_id: me.id,
+        teacher_name: profile.display_name,
         note,
-        approved_by: me.id
-      });
+        confirmed_by: me.id
+      }).select().single();
 
       if(e1){
         alert(e1.message);
         return;
+      }
+
+      if(type === "sullam"){
+        const { error: e2 } = await sb.from("sullam_progress").insert({
+          user_id: student.id,
+          step_number: step,
+          surah_name: surah,
+          page_number: page,
+          ayah_from: ayahFrom,
+          ayah_to: ayahTo,
+          approved_record_id: rec.id
+        });
+        if(e2){
+          alert(e2.message);
+          return;
+        }
       }
 
       alert("Saved directly as approved ✅");
@@ -1106,31 +1292,12 @@ rows.slice(3).map((x, i) => `
         return;
       }
 
-      const teachers = await fetchTeachers();
-      const { data: roster } = await sb.from("student_roster").select("*").order("created_at", { ascending:false });
+      const { data: profs } = await sb
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending:false });
 
       body.innerHTML = `
-        <div class="notice"><b>Create Students</b> (roster students for teachers to track)</div>
-        <div class="hr"></div>
-
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Student name</label>
-            <input id="newStudentName" />
-          </div>
-          <div class="formRow">
-            <label>Assign teacher</label>
-            <select id="newStudentTeacher">
-              <option value="">No teacher</option>
-              ${teachers.map(t => `<option value="${t.id}">${escapeHtml(t.display_name)}</option>`).join("")}
-            </select>
-          </div>
-        </div>
-
-        <button class="btn" id="createStudentBtn">Create Student</button>
-
-        <div class="hr"></div>
-
         <div class="notice"><b>Leaderboard Settings</b></div>
         <div class="hr"></div>
 
@@ -1160,48 +1327,28 @@ rows.slice(3).map((x, i) => `
         </div>
 
         <div class="hr"></div>
-
-        <div class="notice"><b>Students</b></div>
+        <div class="notice"><b>Roles</b></div>
         <div class="hr"></div>
 
-        ${
-          (roster || []).map(s => `
-            <div class="row">
-              <div>
-                <strong>${escapeHtml(s.name)}</strong>
-                <div class="meta">Student ID: ${s.id}</div>
-              </div>
+        ${(profs || []).map(p => `
+          <div class="row">
+            <div>
+              <strong>${escapeHtml(p.display_name || "No name")}</strong>
+              <div class="meta">${escapeHtml(p.id)}</div>
             </div>
-          `).join("") || `<div class="notice">No students yet.</div>`
-        }
+            <div style="min-width:170px">
+              <select class="roleSelect" data-id="${p.id}">
+                ${["student","teacher","admin"].map(r => `<option value="${r}" ${p.role===r?"selected":""}>${r}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        `).join("")}
       `;
 
-      document.getElementById("createStudentBtn").addEventListener("click", createStudentRoster);
       document.getElementById("saveAdminBtn").addEventListener("click", saveAdminSettings);
-    }
-
-    async function createStudentRoster(){
-      const name = document.getElementById("newStudentName").value.trim();
-      const teacherId = document.getElementById("newStudentTeacher").value || null;
-
-      if(!name){
-        alert("Enter student name.");
-        return;
-      }
-
-      const { error } = await sb.from("student_roster").insert({
-        name,
-        teacher_id: teacherId,
-        created_by: me.id
+      [...body.querySelectorAll(".roleSelect")].forEach(sel => {
+        sel.addEventListener("change", () => updateRole(sel.dataset.id, sel.value));
       });
-
-      if(error){
-        alert(error.message);
-        return;
-      }
-
-      alert("Student created ✅");
-      await renderAll();
     }
 
     async function saveAdminSettings(){
@@ -1229,13 +1376,23 @@ rows.slice(3).map((x, i) => `
       await renderAll();
     }
 
+    async function updateRole(id, role){
+      const { error } = await sb.from("profiles").update({ role }).eq("id", id);
+      if(error){
+        alert(error.message);
+        return;
+      }
+      await bootData();
+      await renderAll();
+    }
+
     async function renderAll(){
       setWho();
       renderTabs();
       showView();
-      await renderHome();
+      if(activeTab === "home") await renderHome();
       if(activeTab === "leaderboard") await renderLeaderboard();
-      if(activeTab === "myquran") await renderMyQuran();
+      if(activeTab === "myquran") await renderMyQuranBody();
       if(activeTab === "teacher") await renderTeacher();
       if(activeTab === "admin") await renderAdmin();
     }
