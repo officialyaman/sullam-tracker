@@ -110,6 +110,13 @@
     }
     .xbtn{border:none;background:transparent;font-size:20px;cursor:pointer}
 
+    .subTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .subTab{
+      padding:8px 12px;border-radius:999px;border:1px solid var(--line);
+      background:#fff;cursor:pointer;font-weight:900;color:var(--btn2)
+    }
+    .subTab.active{background:var(--btn);color:#fff;border-color:transparent}
+
     .sullamShell{
       background:#131313;color:#fff;border-radius:18px;padding:18px;
     }
@@ -145,9 +152,17 @@
       background:#ece8cf;color:#111827;
       border:1px solid rgba(255,255,255,.18);
       user-select:none;cursor:pointer;
+      position:relative;
     }
     .sullamCell.done{
       background:#b9ecb0;
+    }
+    .sullamCell.done::after{
+      content:"✕";
+      position:absolute;
+      color:#c1121f;
+      font-size:28px;
+      font-weight:1000;
     }
     .sullamCell.current{
       background:#f3d58b;
@@ -221,38 +236,11 @@
       </div>
     </div>
 
-    <div id="viewSubmit" class="card hidden">
-      <div class="cardHead"><h3>Submit</h3><small>Requests / direct teacher approval</small></div>
-      <div class="cardBody" id="submitBody"></div>
-    </div>
-
-    <div id="viewSullam" class="card hidden">
-      <div class="cardHead">
-        <h3>Sullam</h3>
-        <small>Actual step ladder</small>
-      </div>
+    <div id="viewMyQuran" class="card hidden">
+      <div class="cardHead"><h3>My Quran</h3><small>Old • New • Sullam</small></div>
       <div class="cardBody">
-        <div class="sullamShell">
-          <div class="sullamHeader">
-            <div class="sullamTitle" id="sullamTitle">سورة نوح</div>
-            <div class="sullamSub">Ayahs: 3 - 4</div>
-          </div>
-
-          <div class="sullamTopStats">
-            <div class="sStat">Approved: <span id="approvedStepLabel">0</span>/55</div>
-            <div class="sStat">Selected: <span id="targetStepLabel">1</span>/55</div>
-          </div>
-
-          <div class="stairWrap">
-            <div id="sullamStair"></div>
-          </div>
-
-          <div class="sullamBtns">
-            <button id="btnStepBack" class="roundAction redBtn">←<span>-1 step</span></button>
-            <button id="btnStepConfirm" class="roundAction greenBtn">✓<span>Confirm</span></button>
-            <button id="btnStepSkip" class="roundAction orangeBtn">→<span>Skip to step</span></button>
-          </div>
-        </div>
+        <div class="subTabs" id="myQuranTabs"></div>
+        <div id="myQuranBody"></div>
       </div>
     </div>
 
@@ -267,7 +255,7 @@
     </div>
   </div>
 
-  <button class="fab" id="fab" title="Open Submit">+</button>
+  <button class="fab" id="fab" title="Open My Quran">+</button>
 
   <div class="modalBack" id="modalBack">
     <div class="modal">
@@ -289,15 +277,21 @@
     let profile = null;
     let settings = null;
     let activeTab = "home";
+    let myQuranTab = "jadeed";
     let approvedStep = 0;
     let targetStep = 1;
 
     const TABS = [
       { key:"home", label:"Home", guard:"any" },
-      { key:"submit", label:"Submit", guard:"any" },
-      { key:"sullam", label:"Sullam", guard:"any" },
+      { key:"myquran", label:"My Quran", guard:"any" },
       { key:"teacher", label:"Teacher Zone", guard:"teacher_or_admin" },
       { key:"admin", label:"Admin", guard:"admin" }
+    ];
+
+    const MY_QURAN_TABS = [
+      { key:"jadeed", label:"New (Jadeed)" },
+      { key:"qadeem", label:"Old (Qadeem)" },
+      { key:"sullam", label:"Sullam" }
     ];
 
     function escapeHtml(s){
@@ -360,12 +354,11 @@
     }
 
     function showView(){
-      const ids = ["viewHome","viewSubmit","viewSullam","viewTeacher","viewAdmin"];
+      const ids = ["viewHome","viewMyQuran","viewTeacher","viewAdmin"];
       ids.forEach(id => document.getElementById(id).classList.add("hidden"));
       const map = {
         home:"viewHome",
-        submit:"viewSubmit",
-        sullam:"viewSullam",
+        myquran:"viewMyQuran",
         teacher:"viewTeacher",
         admin:"viewAdmin"
       };
@@ -381,15 +374,11 @@
         return;
       }
 
-      const { data, error } = await sb
+      const { data } = await sb
         .from("profiles")
         .select("id, display_name, role")
         .eq("id", me.id)
         .maybeSingle();
-
-      if(error){
-        console.error("profiles read error", error);
-      }
 
       if(data){
         profile = data;
@@ -408,10 +397,14 @@
         .select("*")
         .eq("id", true)
         .maybeSingle();
+
       settings = data || {
         leaderboard_enabled: false,
         leaderboard_start_at: null,
-        leaderboard_end_at: null
+        leaderboard_end_at: null,
+        points_qadeem: 2000,
+        points_jadeed: 2000,
+        points_sullam: 6000
       };
     }
 
@@ -495,9 +488,7 @@
       }
 
       closeModal();
-      await loadMe();
-      await loadSettings();
-      await loadApprovedStep();
+      await bootData();
       await renderAll();
     }
 
@@ -510,6 +501,7 @@
       me = null;
       profile = null;
       activeTab = "home";
+      myQuranTab = "jadeed";
       approvedStep = 0;
       targetStep = 1;
       await renderAll();
@@ -595,101 +587,148 @@
       document.getElementById("jadeedMeta").textContent = "Live";
     }
 
-    async function renderSubmit(){
-      const body = document.getElementById("submitBody");
-      if(!me){
-        body.innerHTML = `<div class="notice">Please log in first.</div>`;
-        return;
+    function renderMyQuranTabs(){
+      const el = document.getElementById("myQuranTabs");
+      el.innerHTML = "";
+      for(const t of MY_QURAN_TABS){
+        const b = document.createElement("button");
+        b.className = "subTab" + (myQuranTab === t.key ? " active" : "");
+        b.textContent = t.label;
+        b.addEventListener("click", () => {
+          myQuranTab = t.key;
+          renderMyQuranBody();
+        });
+        el.appendChild(b);
       }
-
-      body.innerHTML = `
-        <div class="twoCol">
-          <div class="formRow">
-            <label>Type</label>
-            <select id="subType">
-              <option value="qadeem">Qadeem</option>
-              <option value="jadeed">Jadeed</option>
-            </select>
-          </div>
-          <div class="formRow">
-            <label>Pages</label>
-            <input id="subPages" type="number" min="1" value="1" />
-          </div>
-        </div>
-
-        <div class="twoCol">
-          <div class="formRow">
-            <label>With teacher?</label>
-            <select id="subWithTeacher">
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-          </div>
-          <div class="formRow">
-            <label>Teacher name</label>
-            <input id="subTeacherName" placeholder="Teacher name" />
-          </div>
-        </div>
-
-        <div class="formRow">
-          <label>Note</label>
-          <textarea id="subNote"></textarea>
-        </div>
-
-        <button class="btn" id="submitRecordBtn">Submit</button>
-      `;
-
-      document.getElementById("submitRecordBtn").addEventListener("click", submitRecord);
     }
 
-    async function submitRecord(){
+    async function saveMemorization(type){
       if(!me || !profile) return;
 
-      const type = document.getElementById("subType").value;
-      const pages = Number(document.getElementById("subPages").value || 0);
-      const with_teacher = document.getElementById("subWithTeacher").value === "true";
-      const teacher_name = document.getElementById("subTeacherName").value.trim();
-      const note = document.getElementById("subNote").value.trim();
+      const surah_name = document.getElementById("mqSurah").value.trim();
+      const page_number = Number(document.getElementById("mqPage").value || 0);
+      const ayah_from = Number(document.getElementById("mqAyahFrom").value || 0);
+      const ayah_to = Number(document.getElementById("mqAyahTo").value || 0);
+      const pages_count = Number(document.getElementById("mqPagesCount").value || 1);
+      const teacher_name = document.getElementById("mqTeacher").value.trim();
+      const note = document.getElementById("mqNote").value.trim();
 
-      if(pages <= 0){
-        alert("Pages must be more than 0.");
+      if(!surah_name || !page_number) {
+        alert("Enter surah and page.");
         return;
       }
 
       const payload = {
         user_id: me.id,
         type,
-        pages,
-        with_teacher,
+        surah_name,
+        page_number,
+        ayah_from: ayah_from || null,
+        ayah_to: ayah_to || null,
+        pages_count,
         teacher_name,
         note
       };
 
-      const autoApprove = profile.role === "teacher" || profile.role === "admin";
+      const { error } = await sb.from("memorization_requests").insert({
+        ...payload,
+        status: "pending"
+      });
 
-      if(autoApprove){
-        const { error } = await sb.from("records").insert({
-          ...payload,
-          confirmed_by: me.id
-        });
-        if(error){
-          alert(error.message);
-          return;
-        }
-        alert("Saved directly as approved ✅");
-      } else {
-        const { error } = await sb.from("requests").insert({
-          ...payload,
-          status: "pending"
-        });
-        if(error){
-          alert(error.message);
-          return;
-        }
-        alert("Sent to Teacher Zone ✅");
+      if(error){
+        alert(error.message);
+        return;
       }
 
-      await renderAll();
+      alert("Sent to teacher for approval ✅");
+    }
+
+    function renderJadeedForm(){
+      return `
+        <div class="notice">New memorization. It will not count until teacher accepts.</div>
+        <div class="hr"></div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Surah name</label>
+            <input id="mqSurah" placeholder="e.g. سورة نوح" />
+          </div>
+          <div class="formRow">
+            <label>Page number</label>
+            <input id="mqPage" type="number" min="1" />
+          </div>
+        </div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Ayah from</label>
+            <input id="mqAyahFrom" type="number" min="1" />
+          </div>
+          <div class="formRow">
+            <label>Ayah to</label>
+            <input id="mqAyahTo" type="number" min="1" />
+          </div>
+        </div>
+        <div class="twoCol">
+          <div class="formRow">
+            <label>Pages count</label>
+            <input id="mqPagesCount" type="number" min="1" value="1" />
+          </div>
+          <div class="formRow">
+            <label>Teacher name</label>
+            <input id="mqTeacher" placeholder="Teacher name" />
+          </div>
+        </div>
+        <div class="formRow">
+          <label>Note</label>
+          <textarea id="mqNote"></textarea>
+        </div>
+        <button class="btn" id="saveJadeedBtn">Send Jadeed</button>
+      `;
+    }
+
+    async function renderQadeemToday(){
+      if(!me) return `<div class="notice">Please log in first.</div>`;
+
+      const { data, error } = await sb
+        .from("qadeem_reviews")
+        .select("*")
+        .eq("user_id", me.id)
+        .order("review_day", { ascending:true });
+
+      if(error){
+        return `<div class="notice">${escapeHtml(error.message)}</div>`;
+      }
+
+      const rows = data || [];
+      if(!rows.length){
+        return `
+          <div class="notice">
+            Qadeem reviews appear after an approved Sullam record.
+            <br><br>
+            Day 1 = 5 times
+            <br>
+            Day 2 = 4 times
+            <br>
+            Day 3 = 3 times
+            <br>
+            Day 4 = 2 times
+            <br>
+            Day 5 = 1 time
+          </div>
+        `;
+      }
+
+      return rows.map(r => `
+        <div class="row">
+          <div>
+            <strong>${escapeHtml(r.surah_name)}</strong>
+            <div class="meta">Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
+            <div class="meta">Day ${r.review_day} • Required ${r.required_repetitions} • Completed ${r.completed_repetitions}</div>
+          </div>
+          <div class="right">
+            <span class="badge ${r.status === 'done' ? 'ok' : 'warn'}">${r.status}</span>
+          </div>
+        </div>
+      `).join("");
     }
 
     function buildSullamRows() {
@@ -708,10 +747,32 @@
     }
 
     function renderSullam() {
-      const box = document.getElementById("sullamStair");
-      if (!box) return;
+      const body = document.getElementById("myQuranBody");
+      body.innerHTML = `
+        <div class="sullamShell">
+          <div class="sullamHeader">
+            <div class="sullamTitle">سورة نوح</div>
+            <div class="sullamSub">Ayahs: 3 - 4</div>
+          </div>
 
-      box.innerHTML = "";
+          <div class="sullamTopStats">
+            <div class="sStat">Approved: <span id="approvedStepLabel">${approvedStep}</span>/55</div>
+            <div class="sStat">Selected: <span id="targetStepLabel">${targetStep}</span>/55</div>
+          </div>
+
+          <div class="stairWrap">
+            <div id="sullamStair"></div>
+          </div>
+
+          <div class="sullamBtns">
+            <button id="btnStepBack" class="roundAction redBtn">←<span>-1 step</span></button>
+            <button id="btnStepConfirm" class="roundAction greenBtn">✓<span>Confirm</span></button>
+            <button id="btnStepSkip" class="roundAction orangeBtn">→<span>Skip to step</span></button>
+          </div>
+        </div>
+      `;
+
+      const box = document.getElementById("sullamStair");
       const rows = buildSullamRows();
 
       rows.forEach(rowArr => {
@@ -738,8 +799,24 @@
         box.appendChild(row);
       });
 
-      document.getElementById("approvedStepLabel").textContent = approvedStep;
-      document.getElementById("targetStepLabel").textContent = targetStep;
+      document.getElementById("btnStepBack").addEventListener("click", () => {
+        targetStep = Math.max(1, targetStep - 1);
+        renderSullam();
+      });
+
+      document.getElementById("btnStepConfirm").addEventListener("click", confirmSullamStep);
+
+      document.getElementById("btnStepSkip").addEventListener("click", () => {
+        const v = prompt("Skip to step (1-55):", String(targetStep));
+        if (v === null) return;
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 1 || n > 55) {
+          alert("Enter a number from 1 to 55.");
+          return;
+        }
+        targetStep = n;
+        renderSullam();
+      });
     }
 
     async function loadApprovedStep(){
@@ -749,18 +826,17 @@
         return;
       }
 
-      const { data, error } = await sb
-        .from("records")
-        .select("step_to")
+      const { data } = await sb
+        .from("sullam_progress")
+        .select("step_number")
         .eq("user_id", me.id)
-        .eq("type", "sullam")
-        .order("step_to", { ascending:false })
+        .order("step_number", { ascending:false })
         .limit(1);
 
-      if(error || !data || !data.length){
+      if(!data || !data.length){
         approvedStep = 0;
       } else {
-        approvedStep = Number(data[0].step_to || 0);
+        approvedStep = Number(data[0].step_number || 0);
       }
 
       targetStep = Math.min(55, Math.max(1, approvedStep + 1));
@@ -769,7 +845,7 @@
     async function openTeacherPickerForSullam() {
       const { data, error } = await sb
         .from("profiles")
-        .select("id, display_name, role")
+        .select("id, display_name")
         .eq("role", "teacher");
 
       if (error) {
@@ -826,8 +902,8 @@
         return;
       }
 
-      if (targetStep <= approvedStep) {
-        alert("Choose a higher step.");
+      if (targetStep !== approvedStep + 1) {
+        alert("You can only request the next step after approval.");
         return;
       }
 
@@ -837,45 +913,41 @@
       const payload = {
         user_id: me.id,
         type: "sullam",
-        pages: targetStep - approvedStep,
-        with_teacher: true,
+        surah_name: "سورة نوح",
+        page_number: 570,
+        ayah_from: 3,
+        ayah_to: 4,
+        pages_count: 1,
+        step_number: targetStep,
+        teacher_id: teacher.id,
         teacher_name: teacher.name,
-        step_from: approvedStep,
-        step_to: targetStep,
         note: ""
       };
 
-      const autoApprove = profile.role === "teacher" || profile.role === "admin";
+      const { error } = await sb.from("memorization_requests").insert({
+        ...payload,
+        status: "pending"
+      });
 
-      if(autoApprove){
-        const { error } = await sb.from("records").insert({
-          ...payload,
-          confirmed_by: me.id
-        });
-
-        if(error){
-          alert(error.message);
-          return;
-        }
-
-        approvedStep = targetStep;
-        alert("Sullam approved directly ✅");
-      } else {
-        const { error } = await sb.from("requests").insert({
-          ...payload,
-          status: "pending"
-        });
-
-        if(error){
-          alert(error.message);
-          return;
-        }
-
-        alert("Sullam sent to teacher ✅");
+      if(error){
+        alert(error.message);
+        return;
       }
 
-      renderSullam();
-      await renderAll();
+      alert("Sullam sent to teacher ✅");
+    }
+
+    async function renderMyQuranBody(){
+      renderMyQuranTabs();
+
+      if(myQuranTab === "jadeed"){
+        document.getElementById("myQuranBody").innerHTML = renderJadeedForm();
+        document.getElementById("saveJadeedBtn").addEventListener("click", () => saveMemorization("jadeed"));
+      } else if(myQuranTab === "qadeem"){
+        document.getElementById("myQuranBody").innerHTML = await renderQadeemToday();
+      } else {
+        renderSullam();
+      }
     }
 
     async function renderTeacher(){
@@ -886,7 +958,7 @@
       }
 
       const { data, error } = await sb
-        .from("requests")
+        .from("memorization_requests")
         .select("*")
         .eq("status","pending")
         .order("created_at", { ascending:false });
@@ -906,12 +978,8 @@
         <div class="row">
           <div>
             <strong>${escapeHtml(r.type)}</strong>
-            <div class="meta">
-              ${Number(r.pages || 0)} pages
-              ${r.type === "sullam" ? ` • steps ${r.step_from} → ${r.step_to}` : ""}
-              • ${r.with_teacher ? "with teacher" : "solo"}
-              • ${escapeHtml(r.teacher_name || "—")}
-            </div>
+            <div class="meta">${escapeHtml(r.surah_name)} • Page ${r.page_number} • Ayahs ${r.ayah_from ?? "-"}-${r.ayah_to ?? "-"}</div>
+            <div class="meta">${r.type === "sullam" ? `Step ${r.step_number}` : `${Number(r.pages_count || 0)} pages`} • Teacher: ${escapeHtml(r.teacher_name || "—")}</div>
           </div>
           <div class="right">
             <button class="btn approve-btn" data-id="${r.id}">Approve</button>
@@ -925,35 +993,62 @@
     }
 
     async function approveReq(id){
-      const { data: r, error } = await sb.from("requests").select("*").eq("id", id).single();
+      const { data: r, error } = await sb.from("memorization_requests").select("*").eq("id", id).single();
       if(error){
         alert(error.message);
         return;
       }
 
-      const { error: e1 } = await sb.from("records").insert({
+      const { data: rec, error: e1 } = await sb.from("memorization_records").insert({
         user_id: r.user_id,
         type: r.type,
-        pages: r.pages,
-        with_teacher: r.with_teacher,
+        surah_name: r.surah_name,
+        page_number: r.page_number,
+        ayah_from: r.ayah_from,
+        ayah_to: r.ayah_to,
+        pages_count: r.pages_count,
+        step_number: r.step_number,
+        teacher_id: r.teacher_id,
         teacher_name: r.teacher_name,
-        step_from: r.step_from,
-        step_to: r.step_to,
         note: r.note,
         confirmed_by: me.id
-      });
+      }).select().single();
+
       if(e1){
         alert(e1.message);
         return;
       }
 
-      const { error: e2 } = await sb.from("requests").update({
+      if(r.type === "sullam"){
+        const { error: e2a } = await sb.from("sullam_progress").insert({
+          user_id: r.user_id,
+          step_number: r.step_number,
+          surah_name: r.surah_name,
+          page_number: r.page_number,
+          ayah_from: r.ayah_from,
+          ayah_to: r.ayah_to,
+          approved_record_id: rec.id
+        });
+
+        if(e2a){
+          alert(e2a.message);
+          return;
+        }
+
+        const { error: e2b } = await sb.rpc("create_qadeem_reviews_for_record", { p_record_id: rec.id });
+        if(e2b){
+          console.error(e2b);
+        }
+      }
+
+      const { error: e3 } = await sb.from("memorization_requests").update({
         status: "approved",
         handled_by: me.id,
         handled_at: new Date().toISOString()
       }).eq("id", id);
-      if(e2){
-        alert(e2.message);
+
+      if(e3){
+        alert(e3.message);
         return;
       }
 
@@ -1034,13 +1129,18 @@
       await renderAll();
     }
 
+    async function bootData(){
+      await loadMe();
+      await loadSettings();
+      await loadApprovedStep();
+    }
+
     async function renderAll(){
       setWho();
       renderTabs();
       showView();
       await renderHome();
-      if(activeTab === "submit") await renderSubmit();
-      if(activeTab === "sullam") renderSullam();
+      if(activeTab === "myquran") await renderMyQuranBody();
       if(activeTab === "teacher") await renderTeacher();
       if(activeTab === "admin") await renderAdmin();
     }
@@ -1048,7 +1148,7 @@
     document.getElementById("btnAuth").addEventListener("click", openAuth);
     document.getElementById("btnLogout").addEventListener("click", doLogout);
     document.getElementById("fab").addEventListener("click", () => {
-      activeTab = "submit";
+      activeTab = "myquran";
       renderAll();
     });
     document.getElementById("modalClose").addEventListener("click", closeModal);
@@ -1056,36 +1156,12 @@
       if(e.target.id === "modalBack") closeModal();
     });
 
-    document.getElementById("btnStepBack").addEventListener("click", () => {
-      targetStep = Math.max(1, targetStep - 1);
-      renderSullam();
-    });
-
-    document.getElementById("btnStepConfirm").addEventListener("click", confirmSullamStep);
-
-    document.getElementById("btnStepSkip").addEventListener("click", () => {
-      const v = prompt("Skip to step (1-55):", String(targetStep));
-      if (v === null) return;
-      const n = Number(v);
-      if (!Number.isFinite(n) || n < 1 || n > 55) {
-        alert("Enter a number from 1 to 55.");
-        return;
-      }
-      targetStep = n;
-      renderSullam();
-    });
-
     (async () => {
-      await loadMe();
-      await loadSettings();
-      await loadApprovedStep();
+      await bootData();
       await renderAll();
 
-      sb.auth.onAuthStateChange(async (_event, session) => {
-        me = session?.user || null;
-        await loadMe();
-        await loadSettings();
-        await loadApprovedStep();
+      sb.auth.onAuthStateChange(async () => {
+        await bootData();
         activeTab = "home";
         await renderAll();
       });
